@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reisetagebuch & NFC Manager</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --subtext: #64748b;
+      --danger: #ef4444;
+      --border: #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding-bottom: 40px; }
+    header { background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 16px; position: sticky; top: 0; z-index: 10; }
+    .container { max-width: 600px; margin: 0 auto; padding: 16px; }
+    .btn { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-secondary { background: #e2e8f0; color: var(--text); }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-sm { padding: 6px 10px; font-size: 0.85rem; }
+    
+    /* Hauptmenü & Suche */
+    .search-bar { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 16px; font-size: 1rem; }
+    .trip-list { display: grid; gap: 12px; }
+    .trip-card { background: var(--card-bg); padding: 16px; border-radius: 12px; border: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+    .trip-card h3 { font-size: 1.1rem; margin-bottom: 4px; }
+    .trip-card p { font-size: 0.85rem; color: var(--subtext); }
+
+    /* Detailansicht & Tabs */
+    .view { display: none; }
+    .view.active { display: block; }
+    .tabs { display: flex; background: #e2e8f0; border-radius: 8px; padding: 4px; margin: 16px 0; }
+    .tab { flex: 1; text-align: center; padding: 8px; border-radius: 6px; cursor: pointer; font-weight: 500; }
+    .tab.active { background: white; color: var(--primary); }
+
+    /* Bilder-Grid */
+    .gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px; }
+    .gallery-item { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: #000; }
+    .gallery-item img { width: 100%; height: 100%; object-fit: cover; }
+    .gallery-item .del-btn { position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 26px; height: 26px; cursor: pointer; display: grid; place-content: center; }
+
+    /* Text & Inputs */
+    textarea { width: 100%; height: 250px; padding: 12px; border-radius: 8px; border: 1px solid var(--border); resize: vertical; font-size: 1rem; margin-bottom: 8px; }
+    .notes-display { background: var(--card-bg); padding: 16px; border-radius: 8px; border: 1px solid var(--border); white-space: pre-wrap; line-height: 1.5; min-height: 150px; }
+    .nfc-badge { display: inline-block; background: #dbeafe; color: #1e40af; font-size: 0.75rem; padding: 6px 10px; border-radius: 6px; margin-top: 8px; word-break: break-all; }
+    .lock-box { background: var(--card-bg); border: 1px solid var(--border); padding: 24px; border-radius: 12px; text-align: center; margin-top: 40px; }
+    .input-field { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; margin: 12px 0; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div style="display:flex; justify-content:space-between; align-items:center; max-width:600px; margin:0 auto;">
+      <h2 id="header-title" onclick="tryGoHome()" style="cursor:pointer;">🗺️ Urlaubstagebuch</h2>
+      <button id="home-back-btn" class="btn btn-secondary btn-sm" onclick="tryGoHome()" style="display:none;">⬅ Hauptmenü</button>
+    </div>
+  </header>
+
+  <div class="container">
+    
+    <!-- LOGIN VIEW -->
+    <div id="view-login" class="view">
+      <div class="lock-box">
+        <h3 style="margin-bottom:8px;">🔒 Zugriff geschützt</h3>
+        <p style="color:var(--subtext); font-size:0.9rem;">Gib das Master-Passwort ein, um das Reisetagebuch zu öffnen:</p>
+        <input type="password" id="login-pwd" class="input-field" placeholder="Passwort..." />
+        <button class="btn" style="width:100%;" onclick="verifyPassword()">Entsperren</button>
+        <p id="login-error" style="color:var(--danger); font-size:0.85rem; margin-top:8px; display:none;">Falsches Passwort!</p>
+      </div>
+    </div>
+
+    <!-- HAUPTMENÜ -->
+    <div id="view-home" class="view">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <input type="text" id="search-input" class="search-bar" style="margin-bottom:0;" placeholder="🔍 Reise suchen..." oninput="renderTripList()" />
+      </div>
+      <div style="display:flex; gap:8px; margin: 12px 0 16px 0;">
+        <button class="btn" style="flex:1;" onclick="createNewTrip()">➕ Neue Reise</button>
+        <button class="btn btn-secondary btn-sm" onclick="changeMasterPassword()" title="Passwort ändern">🔑 Passwort</button>
+      </div>
+      <div id="trip-list" class="trip-list"></div>
+    </div>
+
+    <!-- REISE DETAILANSICHT -->
+    <div id="view-detail" class="view">
+      <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:8px;">
+        <div>
+          <h2 id="trip-title">Reisename</h2>
+          <p id="trip-date" style="color:var(--subtext); font-size:0.9rem;"></p>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="editTripMeta()" title="Name / Datum ändern">✏️</button>
+      </div>
+
+      <div class="nfc-badge" id="nfc-link-info">NFC Link: ...</div>
+
+      <!-- Tab Leiste -->
+      <div class="tabs">
+        <div class="tab active" id="tab-btn-notes" onclick="switchTab('notes')">📝 Notizen</div>
+        <div class="tab" id="tab-btn-photos" onclick="switchTab('photos')">📷 Fotos</div>
+      </div>
+
+      <!-- Tab Notizen -->
+      <div id="tab-content-notes">
+        <div style="display:flex; justify-content:flex-end; margin-bottom:8px;">
+          <button id="notes-edit-btn" class="btn btn-secondary btn-sm" onclick="toggleNotesEdit()">✏️ Notizen bearbeiten</button>
+        </div>
+        <div id="notes-view" class="notes-display"></div>
+        <div id="notes-edit" style="display:none;">
+          <textarea id="notes-input" placeholder="Schreibe hier über eure Erlebnisse, Highlights und Routen..."></textarea>
+          <button class="btn" onclick="saveNotes()">Speichern</button>
+        </div>
+      </div>
+
+      <!-- Tab Fotos -->
+      <div id="tab-content-photos" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <label class="btn btn-sm" style="cursor:pointer;">
+            ➕ Fotos hinzufügen
+            <input type="file" id="photo-upload" accept="image/*" multiple style="display:none;" onchange="handlePhotoUpload(event)" />
+          </label>
+        </div>
+        <div id="gallery-grid" class="gallery-grid"></div>
+      </div>
+
+      <hr style="margin:24px 0; border:0; border-top:1px solid var(--border);" />
+      <button class="btn btn-danger btn-sm" onclick="deleteCurrentTrip()">Reise löschen</button>
+    </div>
+
+  </div>
+
+  <script>
+    let db;
+    let currentTripId = null;
+    let isAuthenticated = false;
+
+    function initDB() {
+      return new Promise((resolve) => {
+        const req = indexedDB.open("TravelLogNFC_Auth", 1);
+        req.onupgradeneeded = (e) => {
+          db = e.target.result;
+          if (!db.objectStoreNames.contains("trips")) {
+            db.createObjectStore("trips", { keyPath: "id" });
+          }
+        };
+        req.onsuccess = (e) => {
+          db = e.target.result;
+          resolve();
+        };
+      });
+    }
+
+    function getStoredPassword() {
+      return localStorage.getItem("travel_app_pwd") || "1234";
+    }
+
+    function verifyPassword() {
+      const entered = document.getElementById("login-pwd").value;
+      if (entered === getStoredPassword()) {
+        isAuthenticated = true;
+        document.getElementById("login-error").style.display = "none";
+        document.getElementById("login-pwd").value = "";
+        showView("home");
+      } else {
+        document.getElementById("login-error").style.display = "block";
+      }
+    }
+
+    function changeMasterPassword() {
+      const current = prompt("Gib das aktuelle Passwort ein:");
+      if (current !== getStoredPassword()) {
+        alert("Falsches Passwort!");
+        return;
+      }
+      const newPwd = prompt("Gib das neue Passwort ein:");
+      if (newPwd && newPwd.trim() !== "") {
+        localStorage.setItem("travel_app_pwd", newPwd.trim());
+        alert("Passwort erfolgreich geändert!");
+      }
+    }
+
+    function tryGoHome() {
+      if (isAuthenticated) {
+        showView("home");
+      } else {
+        showView("login");
+      }
+    }
+
+    async function showView(viewName, tripId = null) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      const backBtn = document.getElementById('home-back-btn');
+      
+      if (viewName === 'login') {
+        document.getElementById('view-login').classList.add('active');
+        backBtn.style.display = 'none';
+      } else if (viewName === 'home') {
+        history.replaceState(null, '', window.location.pathname);
+        document.getElementById('view-home').classList.add('active');
+        backBtn.style.display = 'none';
+        currentTripId = null;
+        renderTripList();
+      } else if (viewName === 'detail') {
+        currentTripId = tripId;
+        document.getElementById('view-detail').classList.add('active');
+        backBtn.style.display = 'block';
+        loadTripDetail(tripId);
+      }
+    }
+
+    function switchTab(tabName) {
+      document.getElementById('tab-btn-notes').classList.toggle('active', tabName === 'notes');
+      document.getElementById('tab-btn-photos').classList.toggle('active', tabName === 'photos');
+      document.getElementById('tab-content-notes').style.display = tabName === 'notes' ? 'block' : 'none';
+      document.getElementById('tab-content-photos').style.display = tabName === 'photos' ? 'block' : 'none';
+    }
+
+    async function createNewTrip() {
+      const name = prompt("Name des Reiseziels / Urlaubs:", "Sommerurlaub Italien");
+      if (!name) return;
+      const date = prompt("Reisezeitraum / Jahr:", new Date().getFullYear().toString());
+
+      const token = Math.random().toString(36).substring(2, 10);
+
+      const newTrip = {
+        id: Date.now().toString(),
+        token: token,
+        name: name,
+        date: date || "",
+        notes: "Was habt ihr erlebt? Klicke auf das Stift-Symbol zum Bearbeiten.",
+        photos: []
+      };
+
+      const tx = db.transaction("trips", "readwrite");
+      tx.objectStore("trips").add(newTrip);
+      tx.oncomplete = () => {
+        history.replaceState(null, '', `?trip=${newTrip.id}&key=${token}`);
+        showView('detail', newTrip.id);
+      };
+    }
+
+    function getAllTrips() {
+      return new Promise((resolve) => {
+        const tx = db.transaction("trips", "readonly");
+        const req = tx.objectStore("trips").getAll();
+        req.onsuccess = () => resolve(req.result);
+      });
+    }
+
+    async function renderTripList() {
+      const trips = await getAllTrips();
+      const query = document.getElementById('search-input').value.toLowerCase();
+      const listEl = document.getElementById('trip-list');
+      listEl.innerHTML = '';
+
+      const filtered = trips.filter(t => 
+        t.name.toLowerCase().includes(query) || (t.date && t.date.toLowerCase().includes(query))
+      );
+
+      filtered.forEach(trip => {
+        const card = document.createElement('div');
+        card.className = 'trip-card';
+        card.onclick = () => {
+          history.replaceState(null, '', `?trip=${trip.id}&key=${trip.token || ''}`);
+          showView('detail', trip.id);
+        };
+        card.innerHTML = `
+          <div>
+            <h3>${trip.name}</h3>
+            <p>📅 ${trip.date || 'Kein Datum'} | 📷 ${trip.photos.length} Fotos</p>
+          </div>
+          <span>➔</span>
+        `;
+        listEl.appendChild(card);
+      });
+    }
+
+    async function loadTripDetail(id) {
+      const tx = db.transaction("trips", "readonly");
+      const req = tx.objectStore("trips").get(id);
+      req.onsuccess = () => {
+        const trip = req.result;
+        if (!trip) { tryGoHome(); return; }
+
+        document.getElementById('trip-title').innerText = trip.name;
+        document.getElementById('trip-date').innerText = `📅 ${trip.date || 'Kein Datum hinterlegt'}`;
+        document.getElementById('notes-view').innerText = trip.notes || "Keine Notizen vorhanden.";
+        document.getElementById('notes-input').value = trip.notes || "";
+        
+        const fullNfcUrl = `${window.location.origin}${window.location.pathname}?trip=${trip.id}&key=${trip.token || ''}`;
+        document.getElementById('nfc-link-info').innerText = `🔗 NFC Tag URL (Auto-Unlock): ${fullNfcUrl}`;
+        
+        document.getElementById('notes-view').style.display = 'block';
+        document.getElementById('notes-edit').style.display = 'none';
+
+        renderGallery(trip.photos);
+      };
+    }
+
+    function toggleNotesEdit() {
+      const view = document.getElementById('notes-view');
+      const edit = document.getElementById('notes-edit');
+      const isEditing = edit.style.display === 'block';
+
+      view.style.display = isEditing ? 'block' : 'none';
+      edit.style.display = isEditing ? 'none' : 'block';
+    }
+
+    async function saveNotes() {
+      const newText = document.getElementById('notes-input').value;
+      const tx = db.transaction("trips", "readwrite");
+      const store = tx.objectStore("trips");
+      const trip = await new Promise(r => store.get(currentTripId).onsuccess = e => r(e.target.result));
+      trip.notes = newText;
+      store.put(trip);
+      tx.oncomplete = () => {
+        document.getElementById('notes-view').innerText = newText;
+        toggleNotesEdit();
+      };
+    }
+
+    async function editTripMeta() {
+      const tx = db.transaction("trips", "readwrite");
+      const store = tx.objectStore("trips");
+      const trip = await new Promise(r => store.get(currentTripId).onsuccess = e => r(e.target.result));
+
+      const newName = prompt("Neuer Name:", trip.name);
+      if (newName) trip.name = newName;
+      const newDate = prompt("Neues Datum:", trip.date);
+      if (newDate !== null) trip.date = newDate;
+
+      store.put(trip);
+      tx.oncomplete = () => loadTripDetail(currentTripId);
+    }
+
+    function renderGallery(photos) {
+      const grid = document.getElementById('gallery-grid');
+      grid.innerHTML = '';
+      photos.forEach((src, idx) => {
+        const item = document.createElement('div');
+        item.className = 'gallery-item';
+        item.innerHTML = `
+          <img src="${src}" />
+          <button class="del-btn" onclick="deletePhoto(${idx})">✕</button>
+        `;
+        grid.appendChild(item);
+      });
+    }
+
+    async function handlePhotoUpload(event) {
+      const files = Array.from(event.target.files);
+      if (!files.length) return;
+
+      const base64List = await Promise.all(files.map(file => {
+        return new Promise(resolve => {
+          const reader = new FileReader();
+          reader.onload = e => resolve(e.target.result);
+          reader.readAsDataURL(file);
+        });
+      }));
+
+      const tx = db.transaction("trips", "readwrite");
+      const store = tx.objectStore("trips");
+      const trip = await new Promise(r => store.get(currentTripId).onsuccess = e => r(e.target.result));
+      trip.photos = trip.photos.concat(base64List);
+      store.put(trip);
+      tx.oncomplete = () => loadTripDetail(currentTripId);
+    }
+
+    async function deletePhoto(idx) {
+      if (!confirm("Foto wirklich löschen?")) return;
+      const tx = db.transaction("trips", "readwrite");
+      const store = tx.objectStore("trips");
+      const trip = await new Promise(r => store.get(currentTripId).onsuccess = e => r(e.target.result));
+      trip.photos.splice(idx, 1);
+      store.put(trip);
+      tx.oncomplete = () => loadTripDetail(currentTripId);
+    }
+
+    async function deleteCurrentTrip() {
+      if (!confirm("Möchtest du diese gesamte Reise unwiderruflich löschen?")) return;
+      const tx = db.transaction("trips", "readwrite");
+      tx.objectStore("trips").delete(currentTripId);
+      tx.oncomplete = () => showView('home');
+    }
+
+    // --- STARTUP LOGIK: NFC AUTO-UNLOCK ODER PASSWORT ---
+    window.addEventListener('DOMContentLoaded', async () => {
+      await initDB();
+      const params = new URLSearchParams(window.location.search);
+      const tripId = params.get('trip');
+      const tripKey = params.get('key');
+
+      if (tripId && tripKey) {
+        // NFC Scan mit Security Token -> Direktentsperrung dieser Reise
+        const tx = db.transaction("trips", "readonly");
+        const req = tx.objectStore("trips").get(tripId);
+        req.onsuccess = () => {
+          const trip = req.result;
+          if (trip && trip.token === tripKey) {
+            showView('detail', tripId);
+          } else {
+            showView('login');
+          }
+        };
+      } else {
+        // Ohne passenden NFC-Token -> Passwort-Sperre
+        showView('login');
+      }
+    });
+  </script>
+</body>
+</html>
