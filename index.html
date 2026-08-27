@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🌍 Mein Reisetagebuch</title>
 
-  <!-- Leaflet CSS für interaktive Karten -->
+  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -124,7 +124,6 @@
       border: 1px solid var(--border);
     }
 
-    /* Grid & Reisen */
     .trips-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -166,7 +165,6 @@
       margin-top: 12px;
     }
 
-    /* Tabs */
     .day-tabs {
       display: flex;
       gap: 8px;
@@ -231,7 +229,6 @@
       border-color: #16a34a;
     }
 
-    /* NFC Box */
     .nfc-box {
       background: rgba(37, 99, 235, 0.08);
       border: 1px dashed var(--primary);
@@ -262,7 +259,6 @@
       white-space: nowrap;
     }
 
-    /* Badges für Tracker */
     .tracker-badges {
       display: flex;
       flex-wrap: wrap;
@@ -280,7 +276,6 @@
       border: 1px solid var(--border);
     }
 
-    /* Ansichten & Text */
     .view-title {
       font-size: 1.4rem;
       font-weight: 700;
@@ -304,7 +299,6 @@
       border-left: 4px solid var(--primary);
     }
 
-    /* Formulare */
     .form-group {
       margin-bottom: 16px;
     }
@@ -362,7 +356,6 @@
       display: none;
     }
 
-    /* Galerie */
     .gallery-heading {
       font-size: 1.1rem;
       margin-top: 24px;
@@ -391,7 +384,6 @@
       opacity: 0.9;
     }
 
-    /* Karten Container */
     .map-container {
       width: 100%;
       height: 440px;
@@ -401,7 +393,6 @@
       z-index: 1;
     }
 
-    /* Location Editor Liste */
     .loc-item {
       background: var(--badge-bg);
       border: 1px solid var(--border);
@@ -446,7 +437,6 @@
       color: var(--text);
     }
 
-    /* Modale Fenster */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -491,7 +481,6 @@
       gap: 8px;
     }
 
-    /* Lightbox / Vollbild */
     .lightbox {
       display: none;
       position: fixed;
@@ -553,9 +542,11 @@
       collection, 
       doc, 
       setDoc, 
-      getDoc,
+      getDoc, 
       getDocs, 
-      deleteDoc,
+      deleteDoc, 
+      addDoc, 
+      updateDoc, 
       query, 
       orderBy 
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -577,7 +568,7 @@
     // Globale Zustände
     let tripsList = [];
     let activeTrip = null;
-    let activeTabIndex = 0; // 0 = Best-Of, 1..N = Tage, -1 = Karte
+    let activeTabIndex = 0;
     let currentUser = null;
     let pendingAction = null;
 
@@ -610,7 +601,6 @@
     const viewTrackerBadges = document.getElementById("viewTrackerBadges");
     const viewText = document.getElementById("viewText");
     const viewGallery = document.getElementById("viewGallery");
-    const gallerySection = document.getElementById("gallerySection");
     const editContentBtn = document.getElementById("editContentBtn");
     const deleteDayBtn = document.getElementById("deleteDayBtn");
 
@@ -638,7 +628,6 @@
     const saveStatus = document.getElementById("saveStatus");
 
     // Gästebuch
-    const guestbookSection = document.getElementById("guestbookSection");
     const guestbookEntries = document.getElementById("guestbookEntries");
     const guestbookMsg = document.getElementById("guestbookMsg");
     const sendGuestbookBtn = document.getElementById("sendGuestbookBtn");
@@ -664,13 +653,11 @@
     const lightboxImg = document.getElementById("lightboxImg");
     const lightboxClose = document.getElementById("lightboxClose");
 
-    // Dark Mode Toggle
     themeToggleBtn.onclick = () => {
       document.body.classList.toggle("dark-mode");
       themeToggleBtn.innerText = document.body.classList.contains("dark-mode") ? "☀️" : "🌙";
     };
 
-    // Lightbox Steuerung
     lightboxClose.onclick = () => { lightbox.style.display = "none"; };
     lightbox.onclick = (e) => { if (e.target === lightbox) lightbox.style.display = "none"; };
 
@@ -679,12 +666,11 @@
       lightbox.style.display = "flex";
     }
 
-    // Auth Überwachung
     onAuthStateChanged(auth, (user) => {
       currentUser = user;
       logoutBtn.style.display = user ? "inline-block" : "none";
       updateNfcBoxVisibility();
-      renderGuestbook();
+      loadGuestbook();
     });
 
     function updateNfcBoxVisibility() {
@@ -827,7 +813,6 @@
         startDate: newTripStart.value || "",
         endDate: newTripEnd.value || "",
         bestOfPhotos: [],
-        guestbook: [],
         days: []
       };
 
@@ -839,15 +824,12 @@
       openTrip(createdTrip, true);
     };
 
-    // Weltkarte Modal
     worldMapBtn.onclick = () => {
       worldMapModal.style.display = "flex";
       setTimeout(initWorldMap, 200);
     };
 
-    closeWorldMapBtn.onclick = () => {
-      worldMapModal.style.display = "none";
-    };
+    closeWorldMapBtn.onclick = () => { worldMapModal.style.display = "none"; };
 
     function initWorldMap() {
       if (!worldMapInstance) {
@@ -860,7 +842,6 @@
         worldMapInstance.invalidateSize();
       }
 
-      // Alle alten Marker entfernen
       worldMapInstance.eachLayer((layer) => {
         if (layer instanceof L.Marker) {
           worldMapInstance.removeLayer(layer);
@@ -910,7 +891,7 @@
 
       updateNfcBoxVisibility();
       renderTabs();
-      renderGuestbook();
+      loadGuestbook();
       selectTab(trip.days && trip.days.length > 0 ? 1 : 0);
     }
 
@@ -927,21 +908,18 @@
     function renderTabs() {
       dayTabs.innerHTML = "";
 
-      // 1. Tab: Best Of
       const bestOfBtn = document.createElement("button");
       bestOfBtn.className = `tab-btn highlight-tab ${activeTabIndex === 0 ? "active" : ""}`;
       bestOfBtn.innerText = "🌟 Best of";
       bestOfBtn.onclick = () => selectTab(0);
       dayTabs.appendChild(bestOfBtn);
 
-      // 2. Tab: Reisekarte
       const mapBtn = document.createElement("button");
       mapBtn.className = `tab-btn map-tab ${activeTabIndex === -1 ? "active" : ""}`;
       mapBtn.innerText = "🗺️ Route & Karte";
       mapBtn.onclick = () => selectTab(-1);
       dayTabs.appendChild(mapBtn);
 
-      // 3. Tabs: Tage
       (activeTrip.days || []).forEach((day, idx) => {
         const tabIndex = idx + 1;
         const btn = document.createElement("button");
@@ -959,7 +937,6 @@
       contentEditor.style.display = "none";
 
       if (index === -1) {
-        // Reisekarte Ansicht
         contentViewer.style.display = "none";
         mapViewer.style.display = "block";
         setTimeout(initTripMap, 200);
@@ -968,7 +945,6 @@
         contentViewer.style.display = "block";
 
         if (index === 0) {
-          // Best-Of
           viewTitle.innerText = `🌟 Best of – ${activeTrip.title}`;
           viewDate.innerText = "Die schönsten Momente & Highlights der gesamten Reise";
           viewTrackerBadges.innerHTML = "";
@@ -976,12 +952,10 @@
           deleteDayBtn.style.display = "none";
           renderGallery(activeTrip.bestOfPhotos || [], viewGallery);
         } else {
-          // Normaler Tag
           const day = activeTrip.days[index - 1];
           viewTitle.innerText = day.title || `Tag ${day.dayNumber}`;
           viewDate.innerText = day.date ? `📅 ${day.date.split("-").reverse().join(".")}` : "";
           
-          // Tracker Badges
           viewTrackerBadges.innerHTML = "";
           const tracker = day.tracker || {};
           const badges = [tracker.weather, tracker.temp, tracker.transport, tracker.focus, tracker.mood, tracker.sleep].filter(Boolean);
@@ -1020,7 +994,6 @@
       });
     }
 
-    // Spezifische Reisekarte rendern
     function initTripMap() {
       if (!tripMapInstance) {
         tripMapInstance = L.map('tripMap').setView([20, 0], 2);
@@ -1032,7 +1005,6 @@
         tripMapInstance.invalidateSize();
       }
 
-      // Layer leeren
       tripMapInstance.eachLayer((layer) => {
         if (layer instanceof L.Marker || layer instanceof L.Polyline) {
           tripMapInstance.removeLayer(layer);
@@ -1061,7 +1033,6 @@
         });
       });
 
-      // Alle Marker setzen
       const bounds = [];
       allLocs.forEach(loc => {
         const marker = L.marker([loc.lat, loc.lng]).addTo(tripMapInstance);
@@ -1069,7 +1040,6 @@
         bounds.push([loc.lat, loc.lng]);
       });
 
-      // Route chronologisch nach Datum/Uhrzeit sortieren und verbinden
       if (routeLocs.length > 1) {
         routeLocs.sort((a, b) => (a.datetime || "").localeCompare(b.datetime || ""));
         const lineCoords = routeLocs.map(l => [l.lat, l.lng]);
@@ -1081,7 +1051,6 @@
       }
     }
 
-    // Tag hinzufügen
     addDayBtn.onclick = () => {
       requireAuth(async () => {
         if (!activeTrip.days) activeTrip.days = [];
@@ -1122,14 +1091,12 @@
       });
     };
 
-    // Editierbereich vorbereiten
     function openEditMode() {
       contentViewer.style.display = "none";
       mapViewer.style.display = "none";
       contentEditor.style.display = "block";
 
       if (activeTabIndex === 0) {
-        // Best-Of bearbeiten
         editTitle.value = "Best of (Highlights)";
         editTitle.disabled = true;
         editDateGroup.style.display = "none";
@@ -1138,7 +1105,6 @@
         editLocationsGroup.style.display = "none";
         editPhotos.value = (activeTrip.bestOfPhotos || []).join(", ");
       } else {
-        // Tag bearbeiten
         const day = activeTrip.days[activeTabIndex - 1];
         editTitle.value = day.title || "";
         editTitle.disabled = false;
@@ -1165,13 +1131,13 @@
 
     function renderLocationInputs(locations) {
       locationsList.innerHTML = "";
-      locations.forEach((loc, idx) => {
+      locations.forEach((loc) => {
         const div = document.createElement("div");
         div.className = "loc-item";
         div.innerHTML = `
           <div class="form-row" style="margin-bottom: 8px;">
-            <input type="text" placeholder="Name des Ortes (z.B. Strand)" class="loc-name" value="${loc.name || ''}">
-            <input type="text" placeholder="Koordinaten (z.B. 41.9028, 12.4964)" class="loc-coords" value="${loc.coords || ''}">
+            <input type="text" placeholder="Name des Ortes (z.B. Strand oder Hotel)" class="loc-name" value="${loc.name || ''}">
+            <input type="text" placeholder="Adresse ODER Koordinaten (z.B. Dobrota 24, Močići)" class="loc-coords" value="${loc.coords || ''}">
           </div>
           <div class="form-row" style="align-items: center;">
             <input type="datetime-local" class="loc-datetime" value="${loc.datetime || ''}">
@@ -1191,8 +1157,8 @@
       div.className = "loc-item";
       div.innerHTML = `
         <div class="form-row" style="margin-bottom: 8px;">
-          <input type="text" placeholder="Name des Ortes (z.B. Aussichtspunkt)" class="loc-name">
-          <input type="text" placeholder="Koordinaten (z.B. 41.9028, 12.4964)" class="loc-coords">
+          <input type="text" placeholder="Name des Ortes (z.B. Strand oder Hotel)" class="loc-name">
+          <input type="text" placeholder="Adresse ODER Koordinaten (z.B. Dobrota 24, Močići)" class="loc-coords">
         </div>
         <div class="form-row" style="align-items: center;">
           <input type="datetime-local" class="loc-datetime">
@@ -1213,8 +1179,35 @@
       contentViewer.style.display = "block";
     };
 
+    // Geocoding Funktion (Adresse in Koordinaten umwandeln)
+    async function resolveCoords(input) {
+      const trimmed = input.trim();
+      if (!trimmed) return "";
+      
+      // Prüfen, ob es bereits reine Zahlenkoordinaten sind (z.B. "42.123, 18.456")
+      const parts = trimmed.split(",").map(n => parseFloat(n.trim()));
+      if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+        return `${parts[0]}, ${parts[1]}`;
+      }
+
+      // Falls es eine Adresse/Text ist -> OpenStreetMap Nominatim anfragen
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(trimmed)}`);
+        const data = await res.json();
+        if (data && data.length > 0) {
+          return `${data[0].lat}, ${data[0].lon}`;
+        }
+      } catch (e) {
+        console.error("Geocoding-Fehler:", e);
+      }
+      return trimmed;
+    }
+
     // Speichern
     saveBtn.onclick = async () => {
+      saveBtn.innerText = "⏳ Speichere & Suche Orte...";
+      saveBtn.disabled = true;
+
       const photosArray = editPhotos.value
         .split(",")
         .map(p => p.trim())
@@ -1225,18 +1218,25 @@
       } else {
         const dayIndex = activeTabIndex - 1;
         
-        // Locations auslesen
         const locElements = locationsList.querySelectorAll(".loc-item");
         const locations = [];
-        locElements.forEach(el => {
+        
+        for (const el of locElements) {
           const name = el.querySelector(".loc-name").value.trim();
-          const coords = el.querySelector(".loc-coords").value.trim();
+          const rawCoords = el.querySelector(".loc-coords").value.trim();
           const datetime = el.querySelector(".loc-datetime").value;
           const isRoute = el.querySelector(".loc-is-route").checked;
-          if (name || coords) {
-            locations.push({ name, coords, datetime, isRoute });
+          
+          if (name || rawCoords) {
+            const finalCoords = await resolveCoords(rawCoords);
+            locations.push({ 
+              name: name || rawCoords, 
+              coords: finalCoords, 
+              datetime, 
+              isRoute 
+            });
           }
-        });
+        }
 
         activeTrip.days[dayIndex] = {
           dayNumber: activeTrip.days[dayIndex].dayNumber,
@@ -1258,12 +1258,16 @@
 
       try {
         await setDoc(doc(db, "reisen", activeTrip.id), activeTrip);
+        saveBtn.innerText = "💾 Änderungen speichern";
+        saveBtn.disabled = false;
         saveStatus.style.display = "inline";
         setTimeout(() => {
           saveStatus.style.display = "none";
           selectTab(activeTabIndex);
         }, 800);
       } catch (err) {
+        saveBtn.innerText = "💾 Änderungen speichern";
+        saveBtn.disabled = false;
         alert("Fehler beim Speichern: " + err.message);
       }
     };
@@ -1271,55 +1275,64 @@
     // ==========================================
     // 3. GÄSTEBUCH
     // ==========================================
-    function renderGuestbook() {
+    async function loadGuestbook() {
       if (!activeTrip) return;
       guestbookEntries.innerHTML = "";
-      const list = activeTrip.guestbook || [];
 
-      if (list.length === 0) {
-        guestbookEntries.innerHTML = `<div class="empty-state">Noch keine Einträge. Sei der Erste!</div>`;
-        return;
-      }
+      try {
+        const gbRef = collection(db, "reisen", activeTrip.id, "gaestebuch");
+        const q = query(gbRef, orderBy("timestamp", "desc"));
+        const snapshot = await getDocs(q);
 
-      list.forEach((entry, idx) => {
-        const div = document.createElement("div");
-        div.className = "guestbook-entry";
-        
-        div.innerHTML = `
-          <div class="guestbook-header">
-            <span class="guestbook-author">👤 ${entry.author}</span>
-            <span>🕒 ${entry.date}</span>
-          </div>
-          <div>${entry.message}</div>
-          ${currentUser ? `
-            <div style="margin-top: 8px; display: flex; gap: 8px;">
-              <button class="secondary edit-gb-btn" style="padding: 3px 8px; font-size: 0.75rem;">✏️ Bearbeiten</button>
-              <button class="danger delete-gb-btn" style="padding: 3px 8px; font-size: 0.75rem;">🗑️ Löschen</button>
-            </div>
-          ` : ''}
-        `;
-
-        if (currentUser) {
-          div.querySelector(".delete-gb-btn").onclick = async () => {
-            if (confirm("Diesen Gästebucheintrag wirklich löschen?")) {
-              activeTrip.guestbook.splice(idx, 1);
-              await setDoc(doc(db, "reisen", activeTrip.id), activeTrip);
-              renderGuestbook();
-            }
-          };
-
-          div.querySelector(".edit-gb-btn").onclick = async () => {
-            const newMsg = prompt("Nachricht anpassen:", entry.message);
-            if (newMsg !== null && newMsg.trim()) {
-              activeTrip.guestbook[idx].message = newMsg.trim();
-              await setDoc(doc(db, "reisen", activeTrip.id), activeTrip);
-              renderGuestbook();
-            }
-          };
+        if (snapshot.empty) {
+          guestbookEntries.innerHTML = `<div class="empty-state">Noch keine Einträge. Hinterlasse den ersten Gruß!</div>`;
+          return;
         }
 
-        guestbookEntries.appendChild(div);
-      });
+        snapshot.forEach(docSnap => {
+          const entry = docSnap.data();
+          const entryId = docSnap.id;
+          const div = document.createElement("div");
+          div.className = "guestbook-entry";
+          
+          div.innerHTML = `
+            <div class="guestbook-header">
+              <span class="guestbook-author">👤 ${entry.author}</span>
+              <span>🕒 ${entry.date}</span>
+            </div>
+            <div>${entry.message}</div>
+            ${currentUser ? `
+              <div style="margin-top: 8px; display: flex; gap: 8px;">
+                <button class="secondary edit-gb-btn" style="padding: 3px 8px; font-size: 0.75rem;">✏️ Bearbeiten</button>
+                <button class="danger delete-gb-btn" style="padding: 3px 8px; font-size: 0.75rem;">🗑️ Löschen</button>
+              </div>
+            ` : ''}
+          `;
+
+          if (currentUser) {
+            div.querySelector(".delete-gb-btn").onclick = async () => {
+              if (confirm("Diesen Gästebucheintrag wirklich löschen?")) {
+                await deleteDoc(doc(db, "reisen", activeTrip.id, "gaestebuch", entryId));
+                loadGuestbook();
+              }
+            };
+
+            div.querySelector(".edit-gb-btn").onclick = async () => {
+              const newMsg = prompt("Nachricht anpassen:", entry.message);
+              if (newMsg !== null && newMsg.trim()) {
+                await updateDoc(doc(db, "reisen", activeTrip.id, "gaestebuch", entryId), {
+                  message: newMsg.trim()
+                });
+                loadGuestbook();
+              }
+            };
+          }
+
+          guestbookEntries.appendChild(div);
+        });
+      } catch (e) {
+        console.error("Gästebuch Ladefehler:", e);
+      }
     }
 
     sendGuestbookBtn.onclick = async () => {
@@ -1336,17 +1349,16 @@
       const now = new Date();
       const dateStr = now.toLocaleDateString("de-DE") + " " + now.toLocaleTimeString("de-DE", { hour: '2-digit', minute: '2-digit' });
 
-      if (!activeTrip.guestbook) activeTrip.guestbook = [];
-      activeTrip.guestbook.unshift({
-        author: author,
-        message: msg,
-        date: dateStr
-      });
-
       try {
-        await setDoc(doc(db, "reisen", activeTrip.id), activeTrip);
+        const gbRef = collection(db, "reisen", activeTrip.id, "gaestebuch");
+        await addDoc(gbRef, {
+          author: author,
+          message: msg,
+          date: dateStr,
+          timestamp: Date.now()
+        });
         guestbookMsg.value = "";
-        renderGuestbook();
+        loadGuestbook();
       } catch (e) {
         alert("Fehler beim Senden: " + e.message);
       }
@@ -1388,9 +1400,7 @@
       </div>
     </header>
 
-    <!-- ==========================================
-         ANSICHT 1: HAUPTMENÜ (REISEN-ÜBERSICHT)
-         ========================================== -->
+    <!-- ANSICHT 1: HAUPTMENÜ -->
     <div id="tripsView">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
         <h2>Meine Reisen</h2>
@@ -1408,16 +1418,14 @@
       <div class="trips-grid" id="tripsGrid"></div>
     </div>
 
-    <!-- ==========================================
-         ANSICHT 2: DETAILANSICHT EINER REISE
-         ========================================== -->
+    <!-- ANSICHT 2: DETAILANSICHT EINER REISE -->
     <div id="tripDetailView" style="display: none;">
       <div class="back-btn-bar">
         <button id="backToTripsBtn" class="secondary">⬅️ Zurück zur Reiseübersicht</button>
         <button id="addDayBtn">➕ Tag hinzufügen</button>
       </div>
 
-      <!-- NFC LINK BOX (Nur sichtbar für Admin) -->
+      <!-- NFC LINK BOX (Admin) -->
       <div id="nfcAdminBox" class="nfc-box">
         <strong style="display: block; margin-bottom: 6px; font-size: 0.9rem;">📲 Link für deinen NFC-Tag dieser Reise:</strong>
         <div class="nfc-box-content">
@@ -1429,10 +1437,9 @@
       <h2 id="tripHeading" style="margin-top: 8px;"></h2>
       <div id="tripSubheading" style="color: var(--muted); margin-bottom: 20px;"></div>
 
-      <!-- Tages & Karten Tabs -->
       <div class="day-tabs" id="dayTabs"></div>
 
-      <!-- 2.1 LESEMODUS (TEXT & BILDER) -->
+      <!-- 2.1 LESEMODUS -->
       <div id="contentViewer" class="view-card">
         <h3 id="viewTitle" class="view-title"></h3>
         <div id="viewDate" class="view-date"></div>
@@ -1450,7 +1457,7 @@
         </div>
       </div>
 
-      <!-- 2.2 REISEKARTE & ROUTE -->
+      <!-- 2.2 REISEKARTE -->
       <div id="mapViewer" style="display: none;">
         <h3 class="view-title">🗺️ Route & besuchte Orte</h3>
         <p style="font-size: 0.9rem; color: var(--muted); margin-bottom: 12px;">Hier siehst du die chronologische Reiseroute und alle markierten Orte dieser Reise.</p>
@@ -1564,7 +1571,7 @@
           <input type="text" id="editPhotos" placeholder="./bilder/tag1_1.jpg, ./bilder/tag1_2.jpg">
         </div>
 
-        <!-- Orte / Locations für Karte -->
+        <!-- Orte / Locations mit Adressunterstützung -->
         <div id="editLocationsGroup" class="form-group">
           <label>📍 Orte & Standorte für die Karte</label>
           <div id="locationsList"></div>
@@ -1605,7 +1612,7 @@
     </div>
   </div>
 
-  <!-- MODAL: NEUE REISE ERSTELLEN -->
+  <!-- MODAL: NEUE REISE -->
   <div id="tripModal" class="modal-overlay">
     <div class="modal">
       <h3>➕ Neue Reise anlegen</h3>
@@ -1650,7 +1657,7 @@
     </div>
   </div>
 
-  <!-- LIGHTBOX / VOLLBILD BILDER -->
+  <!-- LIGHTBOX -->
   <div id="lightbox" class="lightbox">
     <span id="lightboxClose" class="lightbox-close">&times;</span>
     <img id="lightboxImg" class="lightbox-img" src="" alt="Vollbild Vorschau">
