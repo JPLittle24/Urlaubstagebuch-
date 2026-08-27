@@ -1,416 +1,600 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Reisetagebuch & NFC Manager</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📖 Mein Reisetagebuch</title>
+  
   <style>
     :root {
       --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --success: #16a34a;
+      --danger: #dc2626;
       --bg: #f8fafc;
       --card-bg: #ffffff;
       --text: #1e293b;
-      --subtext: #64748b;
-      --danger: #ef4444;
+      --muted: #64748b;
       --border: #e2e8f0;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: var(--bg); color: var(--text); padding-bottom: 40px; }
-    header { background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 16px; position: sticky; top: 0; z-index: 10; }
-    .container { max-width: 600px; margin: 0 auto; padding: 16px; }
-    .btn { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
-    .btn-secondary { background: #e2e8f0; color: var(--text); }
-    .btn-danger { background: var(--danger); color: white; }
-    .btn-sm { padding: 6px 10px; font-size: 0.85rem; }
-    
-    /* Hauptmenü & Suche */
-    .search-bar { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 16px; font-size: 1rem; }
-    .trip-list { display: grid; gap: 12px; }
-    .trip-card { background: var(--card-bg); padding: 16px; border-radius: 12px; border: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-    .trip-card h3 { font-size: 1.1rem; margin-bottom: 4px; }
-    .trip-card p { font-size: 0.85rem; color: var(--subtext); }
 
-    /* Detailansicht & Tabs */
-    .view { display: none; }
-    .view.active { display: block; }
-    .tabs { display: flex; background: #e2e8f0; border-radius: 8px; padding: 4px; margin: 16px 0; }
-    .tab { flex: 1; text-align: center; padding: 8px; border-radius: 6px; cursor: pointer; font-weight: 500; }
-    .tab.active { background: white; color: var(--primary); }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
 
-    /* Bilder-Grid */
-    .gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px; }
-    .gallery-item { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: #000; }
-    .gallery-item img { width: 100%; height: 100%; object-fit: cover; }
-    .gallery-item .del-btn { position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 26px; height: 26px; cursor: pointer; display: grid; place-content: center; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 16px;
+      line-height: 1.6;
+    }
 
-    /* Text & Inputs */
-    textarea { width: 100%; height: 250px; padding: 12px; border-radius: 8px; border: 1px solid var(--border); resize: vertical; font-size: 1rem; margin-bottom: 8px; }
-    .notes-display { background: var(--card-bg); padding: 16px; border-radius: 8px; border: 1px solid var(--border); white-space: pre-wrap; line-height: 1.5; min-height: 150px; }
-    .nfc-badge { display: inline-block; background: #dbeafe; color: #1e40af; font-size: 0.75rem; padding: 6px 10px; border-radius: 6px; margin-top: 8px; word-break: break-all; }
-    .lock-box { background: var(--card-bg); border: 1px solid var(--border); padding: 24px; border-radius: 12px; text-align: center; margin-top: 40px; }
-    .input-field { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; margin: 12px 0; }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 0.95rem;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background-color: var(--primary-hover);
+    }
+
+    button.secondary {
+      background-color: #e2e8f0;
+      color: var(--text);
+    }
+
+    button.secondary:hover {
+      background-color: #cbd5e1;
+    }
+
+    /* Tag Tabs */
+    .day-tabs {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .tab-btn {
+      background: #f1f5f9;
+      color: var(--text);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      font-size: 0.95rem;
+      border: 1px solid var(--border);
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    /* Lesemodus Ansicht */
+    .view-card {
+      padding: 10px 0;
+    }
+
+    .view-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .view-date {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .view-text {
+      white-space: pre-wrap;
+      font-size: 1.05rem;
+      line-height: 1.7;
+      margin-bottom: 24px;
+      background: #f8fafc;
+      padding: 16px;
+      border-radius: 10px;
+      border-left: 4px solid var(--primary);
+    }
+
+    /* Formular */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    input:focus, textarea:focus {
+      border-color: var(--primary);
+    }
+
+    textarea {
+      min-height: 160px;
+      resize: vertical;
+    }
+
+    .edit-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 16px;
+    }
+
+    .status-msg {
+      font-size: 0.9rem;
+      color: var(--success);
+      display: none;
+    }
+
+    /* Galerie */
+    .gallery-heading {
+      font-size: 1.1rem;
+      margin-top: 24px;
+      margin-bottom: 12px;
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+    }
+
+    .gallery img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+    }
+
+    .gallery img:hover {
+      transform: scale(1.02);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 0;
+      color: var(--muted);
+    }
+
+    /* Login Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+    .modal h3 {
+      margin-bottom: 16px;
+    }
+
+    .modal-error {
+      color: var(--danger);
+      font-size: 0.85rem;
+      margin-bottom: 12px;
+      display: none;
+    }
   </style>
+
+  <!-- Firebase SDKs -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { 
+      getAuth, 
+      signInWithEmailAndPassword, 
+      signOut, 
+      onAuthStateChanged 
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { 
+      getFirestore, 
+      collection, 
+      doc, 
+      setDoc, 
+      getDocs, 
+      query, 
+      orderBy 
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    // Deine fest hinterlegte Firebase-Konfiguration
+    const firebaseConfig = {
+      apiKey: "AIzaSyCGQUYIUssiwLHXt0c2UCan1xp4Yql3e6U",
+      authDomain: "urlaubstagebuch-aa8e6.firebaseapp.com",
+      projectId: "urlaubstagebuch-aa8e6",
+      storageBucket: "urlaubstagebuch-aa8e6.firebasestorage.app",
+      messagingSenderId: "508505762134",
+      appId: "1:508505762134:web:99b14a2e84524421c0cef7"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let daysList = [];
+    let currentDayIndex = 0;
+    let currentUser = null;
+    let pendingAction = null;
+
+    // UI-Elemente
+    const tabsContainer = document.getElementById("dayTabs");
+    const emptyState = document.getElementById("emptyState");
+    const addDayBtn = document.getElementById("addDayBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    // Lesemodus
+    const dayViewer = document.getElementById("dayViewer");
+    const viewTitle = document.getElementById("viewTitle");
+    const viewDate = document.getElementById("viewDate");
+    const viewText = document.getElementById("viewText");
+    const viewGallery = document.getElementById("viewGallery");
+    const editDayBtn = document.getElementById("editDayBtn");
+
+    // Editierbereich
+    const dayEditor = document.getElementById("dayEditor");
+    const inputTitle = document.getElementById("dayTitle");
+    const inputDate = document.getElementById("dayDate");
+    const inputText = document.getElementById("dayText");
+    const inputPhotos = document.getElementById("dayPhotos");
+    const saveBtn = document.getElementById("saveBtn");
+    const cancelEditBtn = document.getElementById("cancelEditBtn");
+    const saveStatus = document.getElementById("saveStatus");
+
+    // Login-Modal
+    const loginModal = document.getElementById("loginModal");
+    const loginEmail = document.getElementById("loginEmail");
+    const loginPassword = document.getElementById("loginPassword");
+    const submitLoginBtn = document.getElementById("submitLoginBtn");
+    const closeLoginBtn = document.getElementById("closeLoginBtn");
+    const loginError = document.getElementById("loginError");
+
+    // Auth-Status überwachen
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+      if (user) {
+        logoutBtn.style.display = "inline-block";
+      } else {
+        logoutBtn.style.display = "none";
+      }
+    });
+
+    function requireAuth(actionCallback) {
+      if (currentUser) {
+        actionCallback();
+      } else {
+        pendingAction = actionCallback;
+        loginError.style.display = "none";
+        loginModal.style.display = "flex";
+      }
+    }
+
+    submitLoginBtn.onclick = async () => {
+      try {
+        await signInWithEmailAndPassword(auth, loginEmail.value, loginPassword.value);
+        loginModal.style.display = "none";
+        loginEmail.value = "";
+        loginPassword.value = "";
+        if (pendingAction) {
+          pendingAction();
+          pendingAction = null;
+        }
+      } catch (err) {
+        loginError.innerText = "Ungültige E-Mail oder falsches Passwort.";
+        loginError.style.display = "block";
+      }
+    };
+
+    closeLoginBtn.onclick = () => {
+      loginModal.style.display = "none";
+      pendingAction = null;
+    };
+
+    logoutBtn.onclick = async () => {
+      await signOut(auth);
+      dayEditor.style.display = "none";
+      if (daysList.length > 0) {
+        selectDay(currentDayIndex);
+      }
+      alert("🔒 Abgemeldet. Lesemodus aktiv.");
+    };
+
+    async function loadDays() {
+      const q = query(collection(db, "tagebuch"), orderBy("dayNumber", "asc"));
+      const snapshot = await getDocs(q);
+      
+      daysList = [];
+      snapshot.forEach(docSnap => {
+        daysList.push({ id: docSnap.id, ...docSnap.data() });
+      });
+
+      renderTabs();
+      if (daysList.length > 0) {
+        selectDay(0);
+      } else {
+        showEmpty();
+      }
+    }
+
+    function renderTabs() {
+      tabsContainer.innerHTML = "";
+      daysList.forEach((day, index) => {
+        const btn = document.createElement("button");
+        btn.className = `tab-btn ${index === currentDayIndex ? "active" : ""}`;
+        btn.innerText = `Tag ${day.dayNumber}`;
+        btn.onclick = () => selectDay(index);
+        tabsContainer.appendChild(btn);
+      });
+    }
+
+    function selectDay(index) {
+      currentDayIndex = index;
+      const day = daysList[index];
+
+      emptyState.style.display = "none";
+      dayEditor.style.display = "none";
+      dayViewer.style.display = "block";
+
+      viewTitle.innerText = day.title || `Tag ${day.dayNumber}`;
+      viewDate.innerText = day.date ? `📅 ${day.date}` : "";
+      viewText.innerText = day.text || "Noch kein Text für diesen Tag verfasst.";
+
+      renderGallery(day.photos || [], viewGallery);
+      renderTabs();
+    }
+
+    function showEmpty() {
+      emptyState.style.display = "block";
+      dayViewer.style.display = "none";
+      dayEditor.style.display = "none";
+    }
+
+    function renderGallery(photos, container) {
+      container.innerHTML = "";
+      if (!photos || photos.length === 0) return;
+
+      photos.forEach(path => {
+        const cleanPath = path.trim();
+        if (cleanPath) {
+          const img = document.createElement("img");
+          img.src = cleanPath;
+          img.alt = "Reisefoto";
+          img.onerror = () => { img.style.display = "none"; };
+          container.appendChild(img);
+        }
+      });
+    }
+
+    addDayBtn.onclick = () => {
+      requireAuth(async () => {
+        const nextDayNumber = daysList.length + 1;
+        const today = new Date().toISOString().split("T")[0];
+
+        const newDayData = {
+          dayNumber: nextDayNumber,
+          title: `Tag ${nextDayNumber}`,
+          date: today,
+          text: "",
+          photos: []
+        };
+
+        const docRef = doc(db, "tagebuch", `tag_${nextDayNumber}`);
+        await setDoc(docRef, newDayData);
+
+        daysList.push({ id: `tag_${nextDayNumber}`, ...newDayData });
+        selectDay(daysList.length - 1);
+        openEditMode();
+      });
+    };
+
+    function openEditMode() {
+      const day = daysList[currentDayIndex];
+      inputTitle.value = day.title || "";
+      inputDate.value = day.date || "";
+      inputText.value = day.text || "";
+      inputPhotos.value = day.photos ? day.photos.join(", ") : "";
+
+      dayViewer.style.display = "none";
+      dayEditor.style.display = "block";
+    }
+
+    editDayBtn.onclick = () => {
+      requireAuth(openEditMode);
+    };
+
+    cancelEditBtn.onclick = () => {
+      dayEditor.style.display = "none";
+      dayViewer.style.display = "block";
+    };
+
+    saveBtn.onclick = async () => {
+      if (daysList.length === 0) return;
+
+      const currentDay = daysList[currentDayIndex];
+      const photosArray = inputPhotos.value
+        .split(",")
+        .map(p => p.trim())
+        .filter(p => p.length > 0);
+
+      const updatedData = {
+        dayNumber: currentDay.dayNumber,
+        title: inputTitle.value,
+        date: inputDate.value,
+        text: inputText.value,
+        photos: photosArray
+      };
+
+      try {
+        const docRef = doc(db, "tagebuch", currentDay.id);
+        await setDoc(docRef, updatedData);
+
+        daysList[currentDayIndex] = { id: currentDay.id, ...updatedData };
+
+        saveStatus.style.display = "inline";
+        setTimeout(() => {
+          saveStatus.style.display = "none";
+          selectDay(currentDayIndex);
+        }, 1000);
+      } catch (err) {
+        alert("Fehler beim Speichern: " + err.message);
+      }
+    };
+
+    loadDays();
+  </script>
 </head>
 <body>
 
-  <header>
-    <div style="display:flex; justify-content:space-between; align-items:center; max-width:600px; margin:0 auto;">
-      <h2 id="header-title" onclick="tryGoHome()" style="cursor:pointer;">🗺️ Urlaubstagebuch</h2>
-      <button id="home-back-btn" class="btn btn-secondary btn-sm" onclick="tryGoHome()" style="display:none;">⬅ Hauptmenü</button>
-    </div>
-  </header>
-
   <div class="container">
-    
-    <!-- LOGIN VIEW -->
-    <div id="view-login" class="view">
-      <div class="lock-box">
-        <h3 style="margin-bottom:8px;">🔒 Zugriff geschützt</h3>
-        <p style="color:var(--subtext); font-size:0.9rem;">Gib das Master-Passwort ein, um das Reisetagebuch zu öffnen:</p>
-        <input type="password" id="login-pwd" class="input-field" placeholder="Passwort..." />
-        <button class="btn" style="width:100%;" onclick="verifyPassword()">Entsperren</button>
-        <p id="login-error" style="color:var(--danger); font-size:0.85rem; margin-top:8px; display:none;">Falsches Passwort!</p>
+    <header>
+      <h1>📖 Reisetagebuch</h1>
+      <div class="header-actions">
+        <button id="addDayBtn">➕ Neuer Tag</button>
+        <button id="logoutBtn" class="secondary" style="display: none;">🔒 Abmelden</button>
       </div>
+    </header>
+
+    <!-- Tages-Reiter -->
+    <div class="day-tabs" id="dayTabs"></div>
+
+    <!-- Leerzustand -->
+    <div id="emptyState" class="empty-state">
+      <p>Noch keine Tage im Tagebuch.</p>
+      <p>Klicke oben auf <strong>„➕ Neuer Tag“</strong>, um anzufangen.</p>
     </div>
 
-    <!-- HAUPTMENÜ -->
-    <div id="view-home" class="view">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-        <input type="text" id="search-input" class="search-bar" style="margin-bottom:0;" placeholder="🔍 Reise suchen..." oninput="renderTripList()" />
-      </div>
-      <div style="display:flex; gap:8px; margin: 12px 0 16px 0;">
-        <button class="btn" style="flex:1;" onclick="createNewTrip()">➕ Neue Reise</button>
-        <button class="btn btn-secondary btn-sm" onclick="changeMasterPassword()" title="Passwort ändern">🔑 Passwort</button>
-      </div>
-      <div id="trip-list" class="trip-list"></div>
+    <!-- 1. LESEMODUS -->
+    <div id="dayViewer" style="display: none;" class="view-card">
+      <h2 id="viewTitle" class="view-title"></h2>
+      <div id="viewDate" class="view-date"></div>
+      <div id="viewText" class="view-text"></div>
+      
+      <button id="editDayBtn" class="secondary">✏️ Diesen Tag bearbeiten</button>
+
+      <h3 class="gallery-heading">📸 Fotos</h3>
+      <div class="gallery" id="viewGallery"></div>
     </div>
 
-    <!-- REISE DETAILANSICHT -->
-    <div id="view-detail" class="view">
-      <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:8px;">
-        <div>
-          <h2 id="trip-title">Reisename</h2>
-          <p id="trip-date" style="color:var(--subtext); font-size:0.9rem;"></p>
-        </div>
-        <button class="btn btn-secondary btn-sm" onclick="editTripMeta()" title="Name / Datum ändern">✏️</button>
+    <!-- 2. BEARBEITUNGSMODUS -->
+    <div id="dayEditor" style="display: none;">
+      <div class="form-group">
+        <label for="dayTitle">Titel / Überschrift</label>
+        <input type="text" id="dayTitle" placeholder="z. B. Ankunft & Strand">
       </div>
 
-      <div class="nfc-badge" id="nfc-link-info">NFC Link: ...</div>
-
-      <!-- Tab Leiste -->
-      <div class="tabs">
-        <div class="tab active" id="tab-btn-notes" onclick="switchTab('notes')">📝 Notizen</div>
-        <div class="tab" id="tab-btn-photos" onclick="switchTab('photos')">📷 Fotos</div>
+      <div class="form-group">
+        <label for="dayDate">Datum</label>
+        <input type="date" id="dayDate">
       </div>
 
-      <!-- Tab Notizen -->
-      <div id="tab-content-notes">
-        <div style="display:flex; justify-content:flex-end; margin-bottom:8px;">
-          <button id="notes-edit-btn" class="btn btn-secondary btn-sm" onclick="toggleNotesEdit()">✏️ Notizen bearbeiten</button>
-        </div>
-        <div id="notes-view" class="notes-display"></div>
-        <div id="notes-edit" style="display:none;">
-          <textarea id="notes-input" placeholder="Schreibe hier über eure Erlebnisse, Highlights und Routen..."></textarea>
-          <button class="btn" onclick="saveNotes()">Speichern</button>
-        </div>
+      <div class="form-group">
+        <label for="dayText">Tagebucheintrag</label>
+        <textarea id="dayText" placeholder="Schreibe über deine Erlebnisse..."></textarea>
       </div>
 
-      <!-- Tab Fotos -->
-      <div id="tab-content-photos" style="display:none;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <label class="btn btn-sm" style="cursor:pointer;">
-            ➕ Fotos hinzufügen
-            <input type="file" id="photo-upload" accept="image/*" multiple style="display:none;" onchange="handlePhotoUpload(event)" />
-          </label>
-        </div>
-        <div id="gallery-grid" class="gallery-grid"></div>
+      <div class="form-group">
+        <label for="dayPhotos">GitHub-Bilderpfade (kommagetrennt)</label>
+        <input type="text" id="dayPhotos" placeholder="./bilder/tag1_1.jpg, ./bilder/tag1_2.jpg">
       </div>
 
-      <hr style="margin:24px 0; border:0; border-top:1px solid var(--border);" />
-      <button class="btn btn-danger btn-sm" onclick="deleteCurrentTrip()">Reise löschen</button>
+      <div class="edit-actions">
+        <button id="saveBtn">💾 Speichern</button>
+        <button id="cancelEditBtn" class="secondary">Abbrechen</button>
+        <span id="saveStatus" class="status-msg">✓ Gespeichert!</span>
+      </div>
     </div>
-
   </div>
 
-  <script>
-    let db;
-    let currentTripId = null;
-    let isAuthenticated = false;
+  <!-- LOGIN POPUP -->
+  <div id="loginModal" class="modal-overlay">
+    <div class="modal">
+      <h3>🔐 Admin-Login</h3>
+      <div id="loginError" class="modal-error"></div>
+      <div class="form-group">
+        <label for="loginEmail">E-Mail</label>
+        <input type="email" id="loginEmail" placeholder="deine-email@example.com">
+      </div>
+      <div class="form-group">
+        <label for="loginPassword">Passwort</label>
+        <input type="password" id="loginPassword" placeholder="••••••••">
+      </div>
+      <div class="edit-actions">
+        <button id="submitLoginBtn">Anmelden</button>
+        <button id="closeLoginBtn" class="secondary">Abbrechen</button>
+      </div>
+    </div>
+  </div>
 
-    function initDB() {
-      return new Promise((resolve) => {
-        const req = indexedDB.open("TravelLogNFC_Auth", 1);
-        req.onupgradeneeded = (e) => {
-          db = e.target.result;
-          if (!db.objectStoreNames.contains("trips")) {
-            db.createObjectStore("trips", { keyPath: "id" });
-          }
-        };
-        req.onsuccess = (e) => {
-          db = e.target.result;
-          resolve();
-        };
-      });
-    }
-
-    function getStoredPassword() {
-      return localStorage.getItem("travel_app_pwd") || "1234";
-    }
-
-    function verifyPassword() {
-      const entered = document.getElementById("login-pwd").value;
-      if (entered === getStoredPassword()) {
-        isAuthenticated = true;
-        document.getElementById("login-error").style.display = "none";
-        document.getElementById("login-pwd").value = "";
-        showView("home");
-      } else {
-        document.getElementById("login-error").style.display = "block";
-      }
-    }
-
-    function changeMasterPassword() {
-      const current = prompt("Gib das aktuelle Passwort ein:");
-      if (current !== getStoredPassword()) {
-        alert("Falsches Passwort!");
-        return;
-      }
-      const newPwd = prompt("Gib das neue Passwort ein:");
-      if (newPwd && newPwd.trim() !== "") {
-        localStorage.setItem("travel_app_pwd", newPwd.trim());
-        alert("Passwort erfolgreich geändert!");
-      }
-    }
-
-    function tryGoHome() {
-      if (isAuthenticated) {
-        showView("home");
-      } else {
-        showView("login");
-      }
-    }
-
-    async function showView(viewName, tripId = null) {
-      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-      const backBtn = document.getElementById('home-back-btn');
-      
-      if (viewName === 'login') {
-        document.getElementById('view-login').classList.add('active');
-        backBtn.style.display = 'none';
-      } else if (viewName === 'home') {
-        history.replaceState(null, '', window.location.pathname);
-        document.getElementById('view-home').classList.add('active');
-        backBtn.style.display = 'none';
-        currentTripId = null;
-        renderTripList();
-      } else if (viewName === 'detail') {
-        currentTripId = tripId;
-        document.getElementById('view-detail').classList.add('active');
-        backBtn.style.display = 'block';
-        loadTripDetail(tripId);
-      }
-    }
-
-    function switchTab(tabName) {
-      document.getElementById('tab-btn-notes').classList.toggle('active', tabName === 'notes');
-      document.getElementById('tab-btn-photos').classList.toggle('active', tabName === 'photos');
-      document.getElementById('tab-content-notes').style.display = tabName === 'notes' ? 'block' : 'none';
-      document.getElementById('tab-content-photos').style.display = tabName === 'photos' ? 'block' : 'none';
-    }
-
-    async function createNewTrip() {
-      const name = prompt("Name des Reiseziels / Urlaubs:", "Sommerurlaub Italien");
-      if (!name) return;
-      const date = prompt("Reisezeitraum / Jahr:", new Date().getFullYear().toString());
-
-      const token = Math.random().toString(36).substring(2, 10);
-
-      const newTrip = {
-        id: Date.now().toString(),
-        token: token,
-        name: name,
-        date: date || "",
-        notes: "Was habt ihr erlebt? Klicke auf das Stift-Symbol zum Bearbeiten.",
-        photos: []
-      };
-
-      const tx = db.transaction("trips", "readwrite");
-      tx.objectStore("trips").add(newTrip);
-      tx.oncomplete = () => {
-        history.replaceState(null, '', `?trip=${newTrip.id}&key=${token}`);
-        showView('detail', newTrip.id);
-      };
-    }
-
-    function getAllTrips() {
-      return new Promise((resolve) => {
-        const tx = db.transaction("trips", "readonly");
-        const req = tx.objectStore("trips").getAll();
-        req.onsuccess = () => resolve(req.result);
-      });
-    }
-
-    async function renderTripList() {
-      const trips = await getAllTrips();
-      const query = document.getElementById('search-input').value.toLowerCase();
-      const listEl = document.getElementById('trip-list');
-      listEl.innerHTML = '';
-
-      const filtered = trips.filter(t => 
-        t.name.toLowerCase().includes(query) || (t.date && t.date.toLowerCase().includes(query))
-      );
-
-      filtered.forEach(trip => {
-        const card = document.createElement('div');
-        card.className = 'trip-card';
-        card.onclick = () => {
-          history.replaceState(null, '', `?trip=${trip.id}&key=${trip.token || ''}`);
-          showView('detail', trip.id);
-        };
-        card.innerHTML = `
-          <div>
-            <h3>${trip.name}</h3>
-            <p>📅 ${trip.date || 'Kein Datum'} | 📷 ${trip.photos.length} Fotos</p>
-          </div>
-          <span>➔</span>
-        `;
-        listEl.appendChild(card);
-      });
-    }
-
-    async function loadTripDetail(id) {
-      const tx = db.transaction("trips", "readonly");
-      const req = tx.objectStore("trips").get(id);
-      req.onsuccess = () => {
-        const trip = req.result;
-        if (!trip) { tryGoHome(); return; }
-
-        document.getElementById('trip-title').innerText = trip.name;
-        document.getElementById('trip-date').innerText = `📅 ${trip.date || 'Kein Datum hinterlegt'}`;
-        document.getElementById('notes-view').innerText = trip.notes || "Keine Notizen vorhanden.";
-        document.getElementById('notes-input').value = trip.notes || "";
-        
-        const fullNfcUrl = `${window.location.origin}${window.location.pathname}?trip=${trip.id}&key=${trip.token || ''}`;
-        document.getElementById('nfc-link-info').innerText = `🔗 NFC Tag URL (Auto-Unlock): ${fullNfcUrl}`;
-        
-        document.getElementById('notes-view').style.display = 'block';
-        document.getElementById('notes-edit').style.display = 'none';
-
-        renderGallery(trip.photos);
-      };
-    }
-
-    function toggleNotesEdit() {
-      const view = document.getElementById('notes-view');
-      const edit = document.getElementById('notes-edit');
-      const isEditing = edit.style.display === 'block';
-
-      view.style.display = isEditing ? 'block' : 'none';
-      edit.style.display = isEditing ? 'none' : 'block';
-    }
-
-    async function saveNotes() {
-      const newText = document.getElementById('notes-input').value;
-      const tx = db.transaction("trips", "readwrite");
-      const store = tx.objectStore("trips");
-      const trip = await new Promise(r => store.get(currentTripId).onsuccess = e => r(e.target.result));
-      trip.notes = newText;
-      store.put(trip);
-      tx.oncomplete = () => {
-        document.getElementById('notes-view').innerText = newText;
-        toggleNotesEdit();
-      };
-    }
-
-    async function editTripMeta() {
-      const tx = db.transaction("trips", "readwrite");
-      const store = tx.objectStore("trips");
-      const trip = await new Promise(r => store.get(currentTripId).onsuccess = e => r(e.target.result));
-
-      const newName = prompt("Neuer Name:", trip.name);
-      if (newName) trip.name = newName;
-      const newDate = prompt("Neues Datum:", trip.date);
-      if (newDate !== null) trip.date = newDate;
-
-      store.put(trip);
-      tx.oncomplete = () => loadTripDetail(currentTripId);
-    }
-
-    function renderGallery(photos) {
-      const grid = document.getElementById('gallery-grid');
-      grid.innerHTML = '';
-      photos.forEach((src, idx) => {
-        const item = document.createElement('div');
-        item.className = 'gallery-item';
-        item.innerHTML = `
-          <img src="${src}" />
-          <button class="del-btn" onclick="deletePhoto(${idx})">✕</button>
-        `;
-        grid.appendChild(item);
-      });
-    }
-
-    async function handlePhotoUpload(event) {
-      const files = Array.from(event.target.files);
-      if (!files.length) return;
-
-      const base64List = await Promise.all(files.map(file => {
-        return new Promise(resolve => {
-          const reader = new FileReader();
-          reader.onload = e => resolve(e.target.result);
-          reader.readAsDataURL(file);
-        });
-      }));
-
-      const tx = db.transaction("trips", "readwrite");
-      const store = tx.objectStore("trips");
-      const trip = await new Promise(r => store.get(currentTripId).onsuccess = e => r(e.target.result));
-      trip.photos = trip.photos.concat(base64List);
-      store.put(trip);
-      tx.oncomplete = () => loadTripDetail(currentTripId);
-    }
-
-    async function deletePhoto(idx) {
-      if (!confirm("Foto wirklich löschen?")) return;
-      const tx = db.transaction("trips", "readwrite");
-      const store = tx.objectStore("trips");
-      const trip = await new Promise(r => store.get(currentTripId).onsuccess = e => r(e.target.result));
-      trip.photos.splice(idx, 1);
-      store.put(trip);
-      tx.oncomplete = () => loadTripDetail(currentTripId);
-    }
-
-    async function deleteCurrentTrip() {
-      if (!confirm("Möchtest du diese gesamte Reise unwiderruflich löschen?")) return;
-      const tx = db.transaction("trips", "readwrite");
-      tx.objectStore("trips").delete(currentTripId);
-      tx.oncomplete = () => showView('home');
-    }
-
-    // --- STARTUP LOGIK: NFC AUTO-UNLOCK ODER PASSWORT ---
-    window.addEventListener('DOMContentLoaded', async () => {
-      await initDB();
-      const params = new URLSearchParams(window.location.search);
-      const tripId = params.get('trip');
-      const tripKey = params.get('key');
-
-      if (tripId && tripKey) {
-        // NFC Scan mit Security Token -> Direktentsperrung dieser Reise
-        const tx = db.transaction("trips", "readonly");
-        const req = tx.objectStore("trips").get(tripId);
-        req.onsuccess = () => {
-          const trip = req.result;
-          if (trip && trip.token === tripKey) {
-            showView('detail', tripId);
-          } else {
-            showView('login');
-          }
-        };
-      } else {
-        // Ohne passenden NFC-Token -> Passwort-Sperre
-        showView('login');
-      }
-    });
-  </script>
 </body>
 </html>
