@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>📖 Mein Reisetagebuch</title>
+  <title>🌍 Mein Reisetagebuch</title>
   
   <style>
     :root {
@@ -11,6 +11,7 @@
       --primary-hover: #1d4ed8;
       --success: #16a34a;
       --danger: #dc2626;
+      --danger-hover: #b91c1c;
       --bg: #f8fafc;
       --card-bg: #ffffff;
       --text: #1e293b;
@@ -33,25 +34,25 @@
     }
 
     .container {
-      max-width: 800px;
+      max-width: 850px;
       margin: 0 auto;
       background: var(--card-bg);
       padding: 24px;
       border-radius: 16px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
     }
 
     header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
+      margin-bottom: 24px;
       flex-wrap: wrap;
       gap: 12px;
     }
 
     h1 {
-      font-size: 1.5rem;
+      font-size: 1.6rem;
       color: var(--text);
     }
 
@@ -85,7 +86,59 @@
       background-color: #cbd5e1;
     }
 
-    /* Tag Tabs */
+    button.danger {
+      background-color: var(--danger);
+      color: white;
+    }
+
+    button.danger:hover {
+      background-color: var(--danger-hover);
+    }
+
+    /* Reisen Übersicht Grid */
+    .trips-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .trip-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      position: relative;
+    }
+
+    .trip-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+      border-color: var(--primary);
+    }
+
+    .trip-card h3 {
+      font-size: 1.25rem;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+
+    .trip-card .trip-dates {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .trip-card-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 12px;
+    }
+
+    /* Tabs innerhalb einer Reise */
     .day-tabs {
       display: flex;
       gap: 8px;
@@ -112,11 +165,51 @@
       border-color: var(--primary);
     }
 
-    /* Lesemodus Ansicht */
-    .view-card {
-      padding: 10px 0;
+    .tab-btn.highlight-tab {
+      background: #fef3c7;
+      color: #92400e;
+      border-color: #fde68a;
+      font-weight: 600;
     }
 
+    .tab-btn.highlight-tab.active {
+      background: #f59e0b;
+      color: white;
+      border-color: #f59e0b;
+    }
+
+    /* NFC Box für Admin */
+    .nfc-box {
+      background: #eff6ff;
+      border: 1px dashed var(--primary);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      display: none; /* Nur sichtbar wenn eingeloggt */
+    }
+
+    .nfc-box-content {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .nfc-url-text {
+      font-family: monospace;
+      background: white;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      font-size: 0.85rem;
+      flex: 1;
+      min-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Ansichten & Formulare */
     .view-title {
       font-size: 1.4rem;
       font-weight: 700;
@@ -140,9 +233,14 @@
       border-left: 4px solid var(--primary);
     }
 
-    /* Formular */
     .form-group {
       margin-bottom: 16px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
     }
 
     label {
@@ -175,6 +273,7 @@
       gap: 10px;
       align-items: center;
       margin-top: 16px;
+      flex-wrap: wrap;
     }
 
     .status-msg {
@@ -194,6 +293,7 @@
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
       gap: 14px;
+      margin-top: 12px;
     }
 
     .gallery img {
@@ -215,7 +315,7 @@
       color: var(--muted);
     }
 
-    /* Login Modal */
+    /* Modale Fenster */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -227,14 +327,15 @@
       justify-content: center;
       align-items: center;
       z-index: 1000;
+      padding: 16px;
     }
 
     .modal {
       background: white;
       padding: 24px;
-      border-radius: 12px;
-      width: 90%;
-      max-width: 400px;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 440px;
       box-shadow: 0 10px 25px rgba(0,0,0,0.2);
     }
 
@@ -247,6 +348,13 @@
       font-size: 0.85rem;
       margin-bottom: 12px;
       display: none;
+    }
+
+    .back-btn-bar {
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
   </style>
 
@@ -264,12 +372,14 @@
       collection, 
       doc, 
       setDoc, 
+      getDoc,
       getDocs, 
+      deleteDoc,
       query, 
       orderBy 
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // Deine fest hinterlegte Firebase-Konfiguration
+    // Deine Firebase-Konfiguration
     const firebaseConfig = {
       apiKey: "AIzaSyCGQUYIUssiwLHXt0c2UCan1xp4Yql3e6U",
       authDomain: "urlaubstagebuch-aa8e6.firebaseapp.com",
@@ -283,36 +393,61 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    let daysList = [];
-    let currentDayIndex = 0;
+    // State
+    let tripsList = [];
+    let activeTrip = null;
+    let activeTabIndex = 0;
     let currentUser = null;
     let pendingAction = null;
 
-    // UI-Elemente
-    const tabsContainer = document.getElementById("dayTabs");
-    const emptyState = document.getElementById("emptyState");
-    const addDayBtn = document.getElementById("addDayBtn");
+    // DOM-Elemente Übersicht
+    const tripsView = document.getElementById("tripsView");
+    const tripsGrid = document.getElementById("tripsGrid");
+    const emptyTripsState = document.getElementById("emptyTripsState");
+    const addTripBtn = document.getElementById("addTripBtn");
     const logoutBtn = document.getElementById("logoutBtn");
 
-    // Lesemodus
-    const dayViewer = document.getElementById("dayViewer");
+    // DOM-Elemente Reise-Detail
+    const tripDetailView = document.getElementById("tripDetailView");
+    const backToTripsBtn = document.getElementById("backToTripsBtn");
+    const tripHeading = document.getElementById("tripHeading");
+    const tripSubheading = document.getElementById("tripSubheading");
+    const dayTabs = document.getElementById("dayTabs");
+    const addDayBtn = document.getElementById("addDayBtn");
+
+    // NFC-Box Elemente
+    const nfcAdminBox = document.getElementById("nfcAdminBox");
+    const nfcUrlDisplay = document.getElementById("nfcUrlDisplay");
+    const copyNfcBtn = document.getElementById("copyNfcBtn");
+
+    // Ansichten & Editieren
+    const contentViewer = document.getElementById("contentViewer");
     const viewTitle = document.getElementById("viewTitle");
     const viewDate = document.getElementById("viewDate");
     const viewText = document.getElementById("viewText");
     const viewGallery = document.getElementById("viewGallery");
-    const editDayBtn = document.getElementById("editDayBtn");
+    const editContentBtn = document.getElementById("editContentBtn");
+    const deleteDayBtn = document.getElementById("deleteDayBtn");
 
-    // Editierbereich
-    const dayEditor = document.getElementById("dayEditor");
-    const inputTitle = document.getElementById("dayTitle");
-    const inputDate = document.getElementById("dayDate");
-    const inputText = document.getElementById("dayText");
-    const inputPhotos = document.getElementById("dayPhotos");
+    const contentEditor = document.getElementById("contentEditor");
+    const editTitle = document.getElementById("editTitle");
+    const editDateGroup = document.getElementById("editDateGroup");
+    const editDate = document.getElementById("editDate");
+    const editTextGroup = document.getElementById("editTextGroup");
+    const editText = document.getElementById("editText");
+    const editPhotos = document.getElementById("editPhotos");
     const saveBtn = document.getElementById("saveBtn");
     const cancelEditBtn = document.getElementById("cancelEditBtn");
     const saveStatus = document.getElementById("saveStatus");
 
-    // Login-Modal
+    // Modale
+    const tripModal = document.getElementById("tripModal");
+    const newTripTitle = document.getElementById("newTripTitle");
+    const newTripStart = document.getElementById("newTripStart");
+    const newTripEnd = document.getElementById("newTripEnd");
+    const saveTripBtn = document.getElementById("saveTripBtn");
+    const closeTripModalBtn = document.getElementById("closeTripModalBtn");
+
     const loginModal = document.getElementById("loginModal");
     const loginEmail = document.getElementById("loginEmail");
     const loginPassword = document.getElementById("loginPassword");
@@ -320,15 +455,22 @@
     const closeLoginBtn = document.getElementById("closeLoginBtn");
     const loginError = document.getElementById("loginError");
 
-    // Auth-Status überwachen
+    // Auth Überwachung
     onAuthStateChanged(auth, (user) => {
       currentUser = user;
-      if (user) {
-        logoutBtn.style.display = "inline-block";
-      } else {
-        logoutBtn.style.display = "none";
-      }
+      logoutBtn.style.display = user ? "inline-block" : "none";
+      updateNfcBoxVisibility();
     });
+
+    function updateNfcBoxVisibility() {
+      if (currentUser && activeTrip) {
+        nfcAdminBox.style.display = "block";
+        const currentUrl = window.location.origin + window.location.pathname + `?trip=${activeTrip.id}`;
+        nfcUrlDisplay.innerText = currentUrl;
+      } else {
+        nfcAdminBox.style.display = "none";
+      }
+    }
 
     function requireAuth(actionCallback) {
       if (currentUser) {
@@ -363,220 +505,475 @@
 
     logoutBtn.onclick = async () => {
       await signOut(auth);
-      dayEditor.style.display = "none";
-      if (daysList.length > 0) {
-        selectDay(currentDayIndex);
+      contentEditor.style.display = "none";
+      updateNfcBoxVisibility();
+      if (activeTrip) {
+        selectTab(activeTabIndex);
       }
       alert("🔒 Abgemeldet. Lesemodus aktiv.");
     };
 
-    async function loadDays() {
-      const q = query(collection(db, "tagebuch"), orderBy("dayNumber", "asc"));
-      const snapshot = await getDocs(q);
-      
-      daysList = [];
-      snapshot.forEach(docSnap => {
-        daysList.push({ id: docSnap.id, ...docSnap.data() });
+    // NFC Link kopieren
+    copyNfcBtn.onclick = () => {
+      const url = nfcUrlDisplay.innerText;
+      navigator.clipboard.writeText(url).then(() => {
+        copyNfcBtn.innerText = "✓ Kopiert!";
+        setTimeout(() => { copyNfcBtn.innerText = "📋 Kopieren"; }, 2000);
       });
+    };
 
-      renderTabs();
-      if (daysList.length > 0) {
-        selectDay(0);
-      } else {
-        showEmpty();
-      }
+    // ==========================================
+    // 1. HAUPTÜBERSICHT
+    // ==========================================
+    async function loadTrips() {
+      const q = query(collection(db, "reisen"), orderBy("startDate", "desc"));
+      const snapshot = await getDocs(q);
+      tripsList = [];
+      snapshot.forEach(docSnap => {
+        tripsList.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      renderTrips();
     }
+
+    function renderTrips() {
+      tripsGrid.innerHTML = "";
+      if (tripsList.length === 0) {
+        emptyTripsState.style.display = "block";
+        return;
+      }
+      emptyTripsState.style.display = "none";
+
+      tripsList.forEach(trip => {
+        const card = document.createElement("div");
+        card.className = "trip-card";
+        
+        const start = trip.startDate ? trip.startDate.split("-").reverse().join(".") : "";
+        const end = trip.endDate ? trip.endDate.split("-").reverse().join(".") : "";
+        const dateRange = (start && end) ? `📅 ${start} – ${end}` : (start ? `📅 Ab ${start}` : "📅 Zeitraum offen");
+
+        card.innerHTML = `
+          <h3>${trip.title}</h3>
+          <div class="trip-dates">${dateRange}</div>
+          <div style="font-size: 0.85rem; color: var(--muted);">
+            📖 ${(trip.days || []).length} Tage verfasst
+          </div>
+          <div class="trip-card-actions">
+            <button class="danger delete-trip-btn" style="padding: 6px 12px; font-size: 0.8rem;">🗑️ Reise löschen</button>
+          </div>
+        `;
+
+        card.onclick = (e) => {
+          if (e.target.classList.contains("delete-trip-btn")) return;
+          openTrip(trip, true);
+        };
+
+        const delBtn = card.querySelector(".delete-trip-btn");
+        delBtn.onclick = (e) => {
+          e.stopPropagation();
+          requireAuth(async () => {
+            if (confirm(`Möchtest du die gesamte Reise "${trip.title}" wirklich unwiderruflich löschen?`)) {
+              await deleteDoc(doc(db, "reisen", trip.id));
+              await loadTrips();
+            }
+          });
+        };
+
+        tripsGrid.appendChild(card);
+      });
+    }
+
+    addTripBtn.onclick = () => {
+      requireAuth(() => {
+        newTripTitle.value = "";
+        newTripStart.value = "";
+        newTripEnd.value = "";
+        tripModal.style.display = "flex";
+      });
+    };
+
+    closeTripModalBtn.onclick = () => {
+      tripModal.style.display = "none";
+    };
+
+    saveTripBtn.onclick = async () => {
+      if (!newTripTitle.value.trim()) {
+        alert("Bitte gib einen Namen für die Reise ein.");
+        return;
+      }
+
+      const tripId = `reise_${Date.now()}`;
+      const newTripData = {
+        title: newTripTitle.value.trim(),
+        startDate: newTripStart.value || "",
+        endDate: newTripEnd.value || "",
+        bestOfPhotos: [],
+        days: []
+      };
+
+      await setDoc(doc(db, "reisen", tripId), newTripData);
+      tripModal.style.display = "none";
+      await loadTrips();
+      
+      const createdTrip = { id: tripId, ...newTripData };
+      openTrip(createdTrip, true);
+    };
+
+    // ==========================================
+    // 2. REISE-DETAILANSICHT
+    // ==========================================
+    function openTrip(trip, updateUrl = true) {
+      activeTrip = trip;
+      activeTabIndex = 0;
+
+      if (updateUrl) {
+        const newUrl = `${window.location.origin}${window.location.pathname}?trip=${trip.id}`;
+        window.history.pushState({ path: newUrl }, '', newUrl);
+      }
+
+      tripsView.style.display = "none";
+      tripDetailView.style.display = "block";
+
+      tripHeading.innerText = trip.title;
+      const start = trip.startDate ? trip.startDate.split("-").reverse().join(".") : "";
+      const end = trip.endDate ? trip.endDate.split("-").reverse().join(".") : "";
+      tripSubheading.innerText = (start && end) ? `📅 ${start} – ${end}` : (start ? `📅 Ab ${start}` : "");
+
+      updateNfcBoxVisibility();
+      renderTabs();
+      selectTab(trip.days && trip.days.length > 0 ? 1 : 0);
+    }
+
+    // Zurück zur Übersicht -> Passwortgeschützt!
+    backToTripsBtn.onclick = () => {
+      requireAuth(() => {
+        activeTrip = null;
+        // URL-Parameter entfernen
+        window.history.pushState({}, '', window.location.pathname);
+        tripDetailView.style.display = "none";
+        tripsView.style.display = "block";
+        loadTrips();
+      });
+    };
 
     function renderTabs() {
-      tabsContainer.innerHTML = "";
-      daysList.forEach((day, index) => {
+      dayTabs.innerHTML = "";
+
+      // 1. Tab: Best Of
+      const bestOfBtn = document.createElement("button");
+      bestOfBtn.className = `tab-btn highlight-tab ${activeTabIndex === 0 ? "active" : ""}`;
+      bestOfBtn.innerText = "🌟 Best of (Highlights)";
+      bestOfBtn.onclick = () => selectTab(0);
+      dayTabs.appendChild(bestOfBtn);
+
+      // 2. Tabs für Tage
+      (activeTrip.days || []).forEach((day, idx) => {
+        const tabIndex = idx + 1;
         const btn = document.createElement("button");
-        btn.className = `tab-btn ${index === currentDayIndex ? "active" : ""}`;
+        btn.className = `tab-btn ${activeTabIndex === tabIndex ? "active" : ""}`;
         btn.innerText = `Tag ${day.dayNumber}`;
-        btn.onclick = () => selectDay(index);
-        tabsContainer.appendChild(btn);
+        btn.onclick = () => selectTab(tabIndex);
+        dayTabs.appendChild(btn);
       });
     }
 
-    function selectDay(index) {
-      currentDayIndex = index;
-      const day = daysList[index];
-
-      emptyState.style.display = "none";
-      dayEditor.style.display = "none";
-      dayViewer.style.display = "block";
-
-      viewTitle.innerText = day.title || `Tag ${day.dayNumber}`;
-      viewDate.innerText = day.date ? `📅 ${day.date}` : "";
-      viewText.innerText = day.text || "Noch kein Text für diesen Tag verfasst.";
-
-      renderGallery(day.photos || [], viewGallery);
+    function selectTab(index) {
+      activeTabIndex = index;
       renderTabs();
-    }
 
-    function showEmpty() {
-      emptyState.style.display = "block";
-      dayViewer.style.display = "none";
-      dayEditor.style.display = "none";
+      contentEditor.style.display = "none";
+      contentViewer.style.display = "block";
+
+      if (index === 0) {
+        viewTitle.innerText = `🌟 Best of – ${activeTrip.title}`;
+        viewDate.innerText = "Die schönsten Momente & Highlights der gesamten Reise";
+        viewText.style.display = "none";
+        deleteDayBtn.style.display = "none";
+        renderGallery(activeTrip.bestOfPhotos || [], viewGallery);
+      } else {
+        const day = activeTrip.days[index - 1];
+        viewTitle.innerText = day.title || `Tag ${day.dayNumber}`;
+        viewDate.innerText = day.date ? `📅 ${day.date.split("-").reverse().join(".")}` : "";
+        viewText.style.display = "block";
+        viewText.innerText = day.text || "Noch kein Text für diesen Tag verfasst.";
+        deleteDayBtn.style.display = "inline-block";
+        renderGallery(day.photos || [], viewGallery);
+      }
     }
 
     function renderGallery(photos, container) {
       container.innerHTML = "";
-      if (!photos || photos.length === 0) return;
+      if (!photos || photos.length === 0) {
+        container.innerHTML = `<div style="color: var(--muted); font-size: 0.9rem; grid-column: 1/-1;">Noch keine Bilder hinzugefügt.</div>`;
+        return;
+      }
 
       photos.forEach(path => {
         const cleanPath = path.trim();
         if (cleanPath) {
           const img = document.createElement("img");
           img.src = cleanPath;
-          img.alt = "Reisefoto";
+          img.alt = "Foto";
           img.onerror = () => { img.style.display = "none"; };
           container.appendChild(img);
         }
       });
     }
 
+    // Tag hinzufügen
     addDayBtn.onclick = () => {
       requireAuth(async () => {
-        const nextDayNumber = daysList.length + 1;
+        if (!activeTrip.days) activeTrip.days = [];
+        const nextDayNum = activeTrip.days.length + 1;
         const today = new Date().toISOString().split("T")[0];
 
-        const newDayData = {
-          dayNumber: nextDayNumber,
-          title: `Tag ${nextDayNumber}`,
+        const newDay = {
+          dayNumber: nextDayNum,
+          title: `Tag ${nextDayNum}`,
           date: today,
           text: "",
           photos: []
         };
 
-        const docRef = doc(db, "tagebuch", `tag_${nextDayNumber}`);
-        await setDoc(docRef, newDayData);
+        activeTrip.days.push(newDay);
+        await setDoc(doc(db, "reisen", activeTrip.id), activeTrip);
 
-        daysList.push({ id: `tag_${nextDayNumber}`, ...newDayData });
-        selectDay(daysList.length - 1);
+        selectTab(activeTrip.days.length);
         openEditMode();
       });
     };
 
-    function openEditMode() {
-      const day = daysList[currentDayIndex];
-      inputTitle.value = day.title || "";
-      inputDate.value = day.date || "";
-      inputText.value = day.text || "";
-      inputPhotos.value = day.photos ? day.photos.join(", ") : "";
+    // Tag löschen
+    deleteDayBtn.onclick = () => {
+      requireAuth(async () => {
+        if (activeTabIndex === 0) return;
+        const dayIndex = activeTabIndex - 1;
+        const day = activeTrip.days[dayIndex];
 
-      dayViewer.style.display = "none";
-      dayEditor.style.display = "block";
+        if (confirm(`Möchtest du "Tag ${day.dayNumber}" wirklich löschen?`)) {
+          activeTrip.days.splice(dayIndex, 1);
+          activeTrip.days.forEach((d, i) => d.dayNumber = i + 1);
+
+          await setDoc(doc(db, "reisen", activeTrip.id), activeTrip);
+          selectTab(activeTrip.days.length > 0 ? 1 : 0);
+        }
+      });
+    };
+
+    function openEditMode() {
+      contentViewer.style.display = "none";
+      contentEditor.style.display = "block";
+
+      if (activeTabIndex === 0) {
+        editTitle.value = "Best of (Highlights)";
+        editTitle.disabled = true;
+        editDateGroup.style.display = "none";
+        editTextGroup.style.display = "none";
+        editPhotos.value = (activeTrip.bestOfPhotos || []).join(", ");
+      } else {
+        const day = activeTrip.days[activeTabIndex - 1];
+        editTitle.value = day.title || "";
+        editTitle.disabled = false;
+        editDateGroup.style.display = "block";
+        editDate.value = day.date || "";
+        editTextGroup.style.display = "block";
+        editText.value = day.text || "";
+        editPhotos.value = (day.photos || []).join(", ");
+      }
     }
 
-    editDayBtn.onclick = () => {
+    editContentBtn.onclick = () => {
       requireAuth(openEditMode);
     };
 
     cancelEditBtn.onclick = () => {
-      dayEditor.style.display = "none";
-      dayViewer.style.display = "block";
+      contentEditor.style.display = "none";
+      contentViewer.style.display = "block";
     };
 
+    // Speichern
     saveBtn.onclick = async () => {
-      if (daysList.length === 0) return;
-
-      const currentDay = daysList[currentDayIndex];
-      const photosArray = inputPhotos.value
+      const photosArray = editPhotos.value
         .split(",")
         .map(p => p.trim())
         .filter(p => p.length > 0);
 
-      const updatedData = {
-        dayNumber: currentDay.dayNumber,
-        title: inputTitle.value,
-        date: inputDate.value,
-        text: inputText.value,
-        photos: photosArray
-      };
+      if (activeTabIndex === 0) {
+        activeTrip.bestOfPhotos = photosArray;
+      } else {
+        const dayIndex = activeTabIndex - 1;
+        activeTrip.days[dayIndex] = {
+          dayNumber: activeTrip.days[dayIndex].dayNumber,
+          title: editTitle.value,
+          date: editDate.value,
+          text: editText.value,
+          photos: photosArray
+        };
+      }
 
       try {
-        const docRef = doc(db, "tagebuch", currentDay.id);
-        await setDoc(docRef, updatedData);
-
-        daysList[currentDayIndex] = { id: currentDay.id, ...updatedData };
-
+        await setDoc(doc(db, "reisen", activeTrip.id), activeTrip);
         saveStatus.style.display = "inline";
         setTimeout(() => {
           saveStatus.style.display = "none";
-          selectDay(currentDayIndex);
-        }, 1000);
+          selectTab(activeTabIndex);
+        }, 800);
       } catch (err) {
         alert("Fehler beim Speichern: " + err.message);
       }
     };
 
-    loadDays();
+    // ==========================================
+    // INITIALISIERUNG & URL-PARAMETER PRÜFUNG
+    // ==========================================
+    async function initApp() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tripIdFromUrl = urlParams.get("trip");
+
+      if (tripIdFromUrl) {
+        // Direkt eine bestimmte Reise über den NFC-Link öffnen
+        try {
+          const docSnap = await getDoc(doc(db, "reisen", tripIdFromUrl));
+          if (docSnap.exists()) {
+            openTrip({ id: docSnap.id, ...docSnap.data() }, false);
+            return;
+          }
+        } catch (e) {
+          console.error("Fehler beim Laden der NFC-Reise:", e);
+        }
+      }
+
+      // Standardfall: Hauptübersicht laden
+      loadTrips();
+    }
+
+    initApp();
   </script>
 </head>
 <body>
 
   <div class="container">
     <header>
-      <h1>📖 Reisetagebuch</h1>
+      <h1>🌍 Reisetagebuch</h1>
       <div class="header-actions">
-        <button id="addDayBtn">➕ Neuer Tag</button>
         <button id="logoutBtn" class="secondary" style="display: none;">🔒 Abmelden</button>
       </div>
     </header>
 
-    <!-- Tages-Reiter -->
-    <div class="day-tabs" id="dayTabs"></div>
+    <!-- ==========================================
+         ANSICHT 1: HAUPTMENÜ (REISEN-ÜBERSICHT)
+         ========================================== -->
+    <div id="tripsView">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h2>Meine Reisen</h2>
+        <button id="addTripBtn">➕ Neue Reise hinzufügen</button>
+      </div>
 
-    <!-- Leerzustand -->
-    <div id="emptyState" class="empty-state">
-      <p>Noch keine Tage im Tagebuch.</p>
-      <p>Klicke oben auf <strong>„➕ Neuer Tag“</strong>, um anzufangen.</p>
+      <div id="emptyTripsState" class="empty-state">
+        <p>Noch keine Reisen angelegt.</p>
+        <p>Klicke auf <strong>„➕ Neue Reise hinzufügen“</strong>, um deine erste Reise einzutragen!</p>
+      </div>
+
+      <div class="trips-grid" id="tripsGrid"></div>
     </div>
 
-    <!-- 1. LESEMODUS -->
-    <div id="dayViewer" style="display: none;" class="view-card">
-      <h2 id="viewTitle" class="view-title"></h2>
-      <div id="viewDate" class="view-date"></div>
-      <div id="viewText" class="view-text"></div>
-      
-      <button id="editDayBtn" class="secondary">✏️ Diesen Tag bearbeiten</button>
-
-      <h3 class="gallery-heading">📸 Fotos</h3>
-      <div class="gallery" id="viewGallery"></div>
-    </div>
-
-    <!-- 2. BEARBEITUNGSMODUS -->
-    <div id="dayEditor" style="display: none;">
-      <div class="form-group">
-        <label for="dayTitle">Titel / Überschrift</label>
-        <input type="text" id="dayTitle" placeholder="z. B. Ankunft & Strand">
+    <!-- ==========================================
+         ANSICHT 2: DETAILANSICHT EINER REISE
+         ========================================== -->
+    <div id="tripDetailView" style="display: none;">
+      <div class="back-btn-bar">
+        <button id="backToTripsBtn" class="secondary">⬅️ Zurück zur Reiseübersicht</button>
+        <button id="addDayBtn">➕ Tag hinzufügen</button>
       </div>
 
-      <div class="form-group">
-        <label for="dayDate">Datum</label>
-        <input type="date" id="dayDate">
+      <!-- NFC LINK BOX (Nur sichtbar für Admin) -->
+      <div id="nfcAdminBox" class="nfc-box">
+        <strong style="display: block; margin-bottom: 6px; font-size: 0.9rem;">📲 Link für deinen NFC-Tag dieser Reise:</strong>
+        <div class="nfc-box-content">
+          <span id="nfcUrlDisplay" class="nfc-url-text"></span>
+          <button id="copyNfcBtn" class="secondary" style="padding: 6px 12px; font-size: 0.85rem;">📋 Kopieren</button>
+        </div>
       </div>
 
-      <div class="form-group">
-        <label for="dayText">Tagebucheintrag</label>
-        <textarea id="dayText" placeholder="Schreibe über deine Erlebnisse..."></textarea>
+      <h2 id="tripHeading" style="margin-top: 8px;"></h2>
+      <div id="tripSubheading" style="color: var(--muted); margin-bottom: 20px;"></div>
+
+      <!-- Tages & Best-Of Tabs -->
+      <div class="day-tabs" id="dayTabs"></div>
+
+      <!-- 2.1 LESEMODUS -->
+      <div id="contentViewer" class="view-card">
+        <h3 id="viewTitle" class="view-title"></h3>
+        <div id="viewDate" class="view-date"></div>
+        <div id="viewText" class="view-text"></div>
+        
+        <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+          <button id="editContentBtn" class="secondary">✏️ Bearbeiten</button>
+          <button id="deleteDayBtn" class="danger" style="display: none;">🗑️ Diesen Tag löschen</button>
+        </div>
+
+        <div id="gallerySection">
+          <h4 class="gallery-heading">📸 Fotos</h4>
+          <div class="gallery" id="viewGallery"></div>
+        </div>
       </div>
 
-      <div class="form-group">
-        <label for="dayPhotos">GitHub-Bilderpfade (kommagetrennt)</label>
-        <input type="text" id="dayPhotos" placeholder="./bilder/tag1_1.jpg, ./bilder/tag1_2.jpg">
-      </div>
+      <!-- 2.2 BEARBEITUNGSMODUS -->
+      <div id="contentEditor" style="display: none;">
+        <div class="form-group">
+          <label for="editTitle">Titel / Überschrift</label>
+          <input type="text" id="editTitle" placeholder="z. B. Strandtag & Altstadt">
+        </div>
 
-      <div class="edit-actions">
-        <button id="saveBtn">💾 Speichern</button>
-        <button id="cancelEditBtn" class="secondary">Abbrechen</button>
-        <span id="saveStatus" class="status-msg">✓ Gespeichert!</span>
+        <div class="form-group" id="editDateGroup">
+          <label for="editDate">Datum</label>
+          <input type="date" id="editDate">
+        </div>
+
+        <div class="form-group" id="editTextGroup">
+          <label for="editText">Tagebucheintrag / Erlebnisse</label>
+          <textarea id="editText" placeholder="Was hast du an diesem Tag erlebt?"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="editPhotos">GitHub-Bilderpfade (kommagetrennt)</label>
+          <input type="text" id="editPhotos" placeholder="./bilder/tag1_1.jpg, ./bilder/tag1_2.jpg">
+        </div>
+
+        <div class="edit-actions">
+          <button id="saveBtn">💾 Änderungen speichern</button>
+          <button id="cancelEditBtn" class="secondary">Abbrechen</button>
+          <span id="saveStatus" class="status-msg">✓ Erfolgreich gespeichert!</span>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- LOGIN POPUP -->
+  <!-- MODAL: NEUE REISE ERSTELLEN -->
+  <div id="tripModal" class="modal-overlay">
+    <div class="modal">
+      <h3>➕ Neue Reise anlegen</h3>
+      <div class="form-group">
+        <label for="newTripTitle">Reiseziel / Name der Reise</label>
+        <input type="text" id="newTripTitle" placeholder="z. B. Sommerurlaub Mallorca 2024">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="newTripStart">Startdatum</label>
+          <input type="date" id="newTripStart">
+        </div>
+        <div class="form-group">
+          <label for="newTripEnd">Enddatum</label>
+          <input type="date" id="newTripEnd">
+        </div>
+      </div>
+      <div class="edit-actions">
+        <button id="saveTripBtn">Reise anlegen</button>
+        <button id="closeTripModalBtn" class="secondary">Abbrechen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADMIN-LOGIN -->
   <div id="loginModal" class="modal-overlay">
     <div class="modal">
       <h3>🔐 Admin-Login</h3>
