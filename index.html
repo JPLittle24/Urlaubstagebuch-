@@ -551,7 +551,6 @@
       orderBy 
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // Deine Konfiguration
     const firebaseConfig = {
       apiKey: "AIzaSyCGQUYIUssiwLHXt0c2UCan1xp4Yql3e6U",
       authDomain: "urlaubstagebuch-aa8e6.firebaseapp.com",
@@ -565,7 +564,6 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // Globale Zustände
     let tripsList = [];
     let activeTrip = null;
     let activeTabIndex = 0;
@@ -1136,7 +1134,7 @@
         div.className = "loc-item";
         div.innerHTML = `
           <div class="form-row" style="margin-bottom: 8px;">
-            <input type="text" placeholder="Name des Ortes (z.B. Strand oder Hotel)" class="loc-name" value="${loc.name || ''}">
+            <input type="text" placeholder="Name des Ortes (z.B. Hotel oder Strand)" class="loc-name" value="${loc.name || ''}">
             <input type="text" placeholder="Adresse ODER Koordinaten (z.B. Dobrota 24, Močići)" class="loc-coords" value="${loc.coords || ''}">
           </div>
           <div class="form-row" style="align-items: center;">
@@ -1157,7 +1155,7 @@
       div.className = "loc-item";
       div.innerHTML = `
         <div class="form-row" style="margin-bottom: 8px;">
-          <input type="text" placeholder="Name des Ortes (z.B. Strand oder Hotel)" class="loc-name">
+          <input type="text" placeholder="Name des Ortes (z.B. Aussichtspunkt)" class="loc-name">
           <input type="text" placeholder="Adresse ODER Koordinaten (z.B. Dobrota 24, Močići)" class="loc-coords">
         </div>
         <div class="form-row" style="align-items: center;">
@@ -1179,27 +1177,55 @@
       contentViewer.style.display = "block";
     };
 
-    // Geocoding Funktion (Adresse in Koordinaten umwandeln)
+    // Robuste Geocoding-Funktion mit automatischer Fallback-Suche
     async function resolveCoords(input) {
-      const trimmed = input.trim();
+      let trimmed = input.trim();
       if (!trimmed) return "";
-      
-      // Prüfen, ob es bereits reine Zahlenkoordinaten sind (z.B. "42.123, 18.456")
-      const parts = trimmed.split(",").map(n => parseFloat(n.trim()));
-      if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-        return `${parts[0]}, ${parts[1]}`;
+
+      // 1. Prüfen, ob es bereits direkte Dezimalkoordinaten sind (z. B. "42.5588, 18.2632" oder "42.5588 18.2632")
+      const numMatch = trimmed.match(/^([-+]?\d{1,3}(?:\.\d+)?)[,\s]+([-+]?\d{1,3}(?:\.\d+)?)$/);
+      if (numMatch) {
+        return `${numMatch[1]}, ${numMatch[2]}`;
       }
 
-      // Falls es eine Adresse/Text ist -> OpenStreetMap Nominatim anfragen
-      try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(trimmed)}`);
-        const data = await res.json();
-        if (data && data.length > 0) {
-          return `${data[0].lat}, ${data[0].lon}`;
-        }
-      } catch (e) {
-        console.error("Geocoding-Fehler:", e);
+      // 2. Ersetze deutsche Ländernamen durch internationale/lokale Namen
+      let normalized = trimmed
+        .replace(/,\s*Kroatien/gi, ", Croatia")
+        .replace(/,\s*Montenegro/gi, ", Montenegro")
+        .replace(/,\s*Italien/gi, ", Italy")
+        .replace(/,\s*Spanien/gi, ", Spain")
+        .replace(/,\s*Frankreich/gi, ", France")
+        .replace(/,\s*Griechenland/gi, ", Greece")
+        .replace(/,\s*Deutschland/gi, ", Germany")
+        .replace(/,\s*Österreich/gi, ", Austria")
+        .replace(/,\s*Schweiz/gi, ", Switzerland");
+
+      // 3. Fallback-Kette: Erst gesamte Adresse, dann schrittweise Details weglassen
+      const parts = normalized.split(",").map(p => p.trim()).filter(Boolean);
+      const candidates = [normalized];
+
+      if (parts.length > 2) {
+        // Ohne Hausnummer/erste Straße suchen (z.B. "20213, Močići, Croatia")
+        candidates.push(parts.slice(1).join(", "));
+        // Nur Ort und Land (z.B. "Močići, Croatia")
+        const withoutZip = parts.slice(1).filter(p => !/^\d{4,6}$/.test(p));
+        candidates.push(withoutZip.join(", "));
+      } else if (parts.length === 2) {
+        candidates.push(parts[0]); // Nur der Ortsname
       }
+
+      for (const queryStr of candidates) {
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryStr)}`);
+          const data = await res.json();
+          if (data && data.length > 0) {
+            return `${data[0].lat}, ${data[0].lon}`;
+          }
+        } catch (e) {
+          console.warn("Geocoding Zwischenschritt:", e);
+        }
+      }
+
       return trimmed;
     }
 
@@ -1571,7 +1597,7 @@
           <input type="text" id="editPhotos" placeholder="./bilder/tag1_1.jpg, ./bilder/tag1_2.jpg">
         </div>
 
-        <!-- Orte / Locations mit Adressunterstützung -->
+        <!-- Orte / Locations -->
         <div id="editLocationsGroup" class="form-group">
           <label>📍 Orte & Standorte für die Karte</label>
           <div id="locationsList"></div>
