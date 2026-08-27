@@ -4,7 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🌍 Mein Reisetagebuch</title>
-  
+
+  <!-- Leaflet CSS für interaktive Karten -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
   <style>
     :root {
       --primary: #2563eb;
@@ -17,6 +22,20 @@
       --text: #1e293b;
       --muted: #64748b;
       --border: #e2e8f0;
+      --badge-bg: #f1f5f9;
+      --badge-text: #334155;
+    }
+
+    body.dark-mode {
+      --primary: #3b82f6;
+      --primary-hover: #60a5fa;
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --border: #334155;
+      --badge-bg: #334155;
+      --badge-text: #f8fafc;
     }
 
     * {
@@ -24,6 +43,7 @@
       margin: 0;
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      transition: background-color 0.2s, color 0.2s;
     }
 
     body {
@@ -34,7 +54,7 @@
     }
 
     .container {
-      max-width: 850px;
+      max-width: 880px;
       margin: 0 auto;
       background: var(--card-bg);
       padding: 24px;
@@ -58,6 +78,7 @@
 
     .header-actions {
       display: flex;
+      align-items: center;
       gap: 8px;
     }
 
@@ -78,12 +99,12 @@
     }
 
     button.secondary {
-      background-color: #e2e8f0;
+      background-color: var(--border);
       color: var(--text);
     }
 
     button.secondary:hover {
-      background-color: #cbd5e1;
+      filter: brightness(0.9);
     }
 
     button.danger {
@@ -95,23 +116,30 @@
       background-color: var(--danger-hover);
     }
 
-    /* Reisen Übersicht Grid */
+    .theme-toggle-btn {
+      padding: 8px 12px;
+      font-size: 1.1rem;
+      background: var(--badge-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    /* Grid & Reisen */
     .trips-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 16px;
       margin-top: 16px;
     }
 
     .trip-card {
-      background: #ffffff;
+      background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 12px;
       padding: 20px;
       cursor: pointer;
       box-shadow: 0 2px 4px rgba(0,0,0,0.04);
       transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
-      position: relative;
     }
 
     .trip-card:hover {
@@ -138,7 +166,7 @@
       margin-top: 12px;
     }
 
-    /* Tabs innerhalb einer Reise */
+    /* Tabs */
     .day-tabs {
       display: flex;
       gap: 8px;
@@ -149,7 +177,7 @@
     }
 
     .tab-btn {
-      background: #f1f5f9;
+      background: var(--badge-bg);
       color: var(--text);
       padding: 8px 16px;
       border-radius: 8px;
@@ -172,20 +200,45 @@
       font-weight: 600;
     }
 
+    body.dark-mode .tab-btn.highlight-tab {
+      background: #78350f;
+      color: #fde68a;
+      border-color: #92400e;
+    }
+
     .tab-btn.highlight-tab.active {
       background: #f59e0b;
       color: white;
       border-color: #f59e0b;
     }
 
-    /* NFC Box für Admin */
+    .tab-btn.map-tab {
+      background: #dcfce7;
+      color: #166534;
+      border-color: #bbf7d0;
+      font-weight: 600;
+    }
+
+    body.dark-mode .tab-btn.map-tab {
+      background: #064e3b;
+      color: #bbf7d0;
+      border-color: #166534;
+    }
+
+    .tab-btn.map-tab.active {
+      background: #16a34a;
+      color: white;
+      border-color: #16a34a;
+    }
+
+    /* NFC Box */
     .nfc-box {
-      background: #eff6ff;
+      background: rgba(37, 99, 235, 0.08);
       border: 1px dashed var(--primary);
       border-radius: 10px;
       padding: 12px 16px;
       margin-bottom: 20px;
-      display: none; /* Nur sichtbar wenn eingeloggt */
+      display: none;
     }
 
     .nfc-box-content {
@@ -197,7 +250,7 @@
 
     .nfc-url-text {
       font-family: monospace;
-      background: white;
+      background: var(--card-bg);
       padding: 6px 10px;
       border-radius: 6px;
       border: 1px solid var(--border);
@@ -209,7 +262,25 @@
       white-space: nowrap;
     }
 
-    /* Ansichten & Formulare */
+    /* Badges für Tracker */
+    .tracker-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .tracker-badge {
+      background: var(--badge-bg);
+      color: var(--badge-text);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      border: 1px solid var(--border);
+    }
+
+    /* Ansichten & Text */
     .view-title {
       font-size: 1.4rem;
       font-weight: 700;
@@ -227,12 +298,13 @@
       font-size: 1.05rem;
       line-height: 1.7;
       margin-bottom: 24px;
-      background: #f8fafc;
+      background: var(--badge-bg);
       padding: 16px;
       border-radius: 10px;
       border-left: 4px solid var(--primary);
     }
 
+    /* Formulare */
     .form-group {
       margin-bottom: 16px;
     }
@@ -243,6 +315,12 @@
       gap: 12px;
     }
 
+    .form-row-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+
     label {
       display: block;
       margin-bottom: 6px;
@@ -250,21 +328,23 @@
       font-size: 0.9rem;
     }
 
-    input, textarea {
+    input, textarea, select {
       width: 100%;
-      padding: 12px;
+      padding: 10px 12px;
       border: 1px solid var(--border);
+      background: var(--card-bg);
+      color: var(--text);
       border-radius: 8px;
-      font-size: 1rem;
+      font-size: 0.95rem;
       outline: none;
     }
 
-    input:focus, textarea:focus {
+    input:focus, textarea:focus, select:focus {
       border-color: var(--primary);
     }
 
     textarea {
-      min-height: 160px;
+      min-height: 150px;
       resize: vertical;
     }
 
@@ -291,28 +371,79 @@
 
     .gallery {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
       gap: 14px;
       margin-top: 12px;
     }
 
     .gallery img {
       width: 100%;
-      height: 200px;
+      height: 180px;
       object-fit: cover;
       border-radius: 10px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      transition: transform 0.2s;
+      transition: transform 0.2s, opacity 0.2s;
+      cursor: pointer;
     }
 
     .gallery img:hover {
       transform: scale(1.02);
+      opacity: 0.9;
     }
 
-    .empty-state {
-      text-align: center;
-      padding: 40px 0;
+    /* Karten Container */
+    .map-container {
+      width: 100%;
+      height: 440px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      margin-top: 12px;
+      z-index: 1;
+    }
+
+    /* Location Editor Liste */
+    .loc-item {
+      background: var(--badge-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+
+    /* Gästebuch */
+    .guestbook-section {
+      margin-top: 36px;
+      padding-top: 24px;
+      border-top: 2px dashed var(--border);
+    }
+
+    .guestbook-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 16px;
+      margin-bottom: 20px;
+    }
+
+    .guestbook-entry {
+      background: var(--badge-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      position: relative;
+    }
+
+    .guestbook-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
       color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .guestbook-author {
+      font-weight: 700;
+      color: var(--text);
     }
 
     /* Modale Fenster */
@@ -323,20 +454,21 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.5);
+      background: rgba(0, 0, 0, 0.6);
       justify-content: center;
       align-items: center;
-      z-index: 1000;
+      z-index: 2000;
       padding: 16px;
     }
 
     .modal {
-      background: white;
+      background: var(--card-bg);
+      color: var(--text);
       padding: 24px;
       border-radius: 14px;
       width: 100%;
       max-width: 440px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
     }
 
     .modal h3 {
@@ -355,6 +487,55 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    /* Lightbox / Vollbild */
+    .lightbox {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.92);
+      z-index: 3000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .lightbox-img {
+      max-width: 90%;
+      max-height: 85%;
+      object-fit: contain;
+      border-radius: 6px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+
+    .lightbox-close {
+      position: absolute;
+      top: 20px;
+      right: 25px;
+      color: white;
+      font-size: 40px;
+      font-weight: bold;
+      cursor: pointer;
+      user-select: none;
+      line-height: 1;
+      padding: 6px 12px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 50%;
+    }
+
+    .lightbox-close:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 30px 0;
+      color: var(--muted);
     }
   </style>
 
@@ -379,7 +560,7 @@
       orderBy 
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // Deine Firebase-Konfiguration
+    // Deine Konfiguration
     const firebaseConfig = {
       apiKey: "AIzaSyCGQUYIUssiwLHXt0c2UCan1xp4Yql3e6U",
       authDomain: "urlaubstagebuch-aa8e6.firebaseapp.com",
@@ -393,21 +574,25 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // State
+    // Globale Zustände
     let tripsList = [];
     let activeTrip = null;
-    let activeTabIndex = 0;
+    let activeTabIndex = 0; // 0 = Best-Of, 1..N = Tage, -1 = Karte
     let currentUser = null;
     let pendingAction = null;
 
-    // DOM-Elemente Übersicht
+    let worldMapInstance = null;
+    let tripMapInstance = null;
+
+    // DOM-Elemente
     const tripsView = document.getElementById("tripsView");
     const tripsGrid = document.getElementById("tripsGrid");
     const emptyTripsState = document.getElementById("emptyTripsState");
     const addTripBtn = document.getElementById("addTripBtn");
+    const worldMapBtn = document.getElementById("worldMapBtn");
     const logoutBtn = document.getElementById("logoutBtn");
+    const themeToggleBtn = document.getElementById("themeToggleBtn");
 
-    // DOM-Elemente Reise-Detail
     const tripDetailView = document.getElementById("tripDetailView");
     const backToTripsBtn = document.getElementById("backToTripsBtn");
     const tripHeading = document.getElementById("tripHeading");
@@ -415,39 +600,58 @@
     const dayTabs = document.getElementById("dayTabs");
     const addDayBtn = document.getElementById("addDayBtn");
 
-    // NFC-Box Elemente
     const nfcAdminBox = document.getElementById("nfcAdminBox");
     const nfcUrlDisplay = document.getElementById("nfcUrlDisplay");
     const copyNfcBtn = document.getElementById("copyNfcBtn");
 
-    // Ansichten & Editieren
     const contentViewer = document.getElementById("contentViewer");
     const viewTitle = document.getElementById("viewTitle");
     const viewDate = document.getElementById("viewDate");
+    const viewTrackerBadges = document.getElementById("viewTrackerBadges");
     const viewText = document.getElementById("viewText");
     const viewGallery = document.getElementById("viewGallery");
+    const gallerySection = document.getElementById("gallerySection");
     const editContentBtn = document.getElementById("editContentBtn");
     const deleteDayBtn = document.getElementById("deleteDayBtn");
+
+    const mapViewer = document.getElementById("mapViewer");
 
     const contentEditor = document.getElementById("contentEditor");
     const editTitle = document.getElementById("editTitle");
     const editDateGroup = document.getElementById("editDateGroup");
     const editDate = document.getElementById("editDate");
+    const editTrackerGroup = document.getElementById("editTrackerGroup");
+    const editWeather = document.getElementById("editWeather");
+    const editTemp = document.getElementById("editTemp");
+    const editTransport = document.getElementById("editTransport");
+    const editFocus = document.getElementById("editFocus");
+    const editMood = document.getElementById("editMood");
+    const editSleep = document.getElementById("editSleep");
     const editTextGroup = document.getElementById("editTextGroup");
     const editText = document.getElementById("editText");
     const editPhotos = document.getElementById("editPhotos");
+    const editLocationsGroup = document.getElementById("editLocationsGroup");
+    const locationsList = document.getElementById("locationsList");
+    const addLocBtn = document.getElementById("addLocBtn");
     const saveBtn = document.getElementById("saveBtn");
     const cancelEditBtn = document.getElementById("cancelEditBtn");
     const saveStatus = document.getElementById("saveStatus");
 
+    // Gästebuch
+    const guestbookSection = document.getElementById("guestbookSection");
+    const guestbookEntries = document.getElementById("guestbookEntries");
+    const guestbookMsg = document.getElementById("guestbookMsg");
+    const sendGuestbookBtn = document.getElementById("sendGuestbookBtn");
+
     // Modale
+    const worldMapModal = document.getElementById("worldMapModal");
+    const closeWorldMapBtn = document.getElementById("closeWorldMapBtn");
     const tripModal = document.getElementById("tripModal");
     const newTripTitle = document.getElementById("newTripTitle");
     const newTripStart = document.getElementById("newTripStart");
     const newTripEnd = document.getElementById("newTripEnd");
     const saveTripBtn = document.getElementById("saveTripBtn");
     const closeTripModalBtn = document.getElementById("closeTripModalBtn");
-
     const loginModal = document.getElementById("loginModal");
     const loginEmail = document.getElementById("loginEmail");
     const loginPassword = document.getElementById("loginPassword");
@@ -455,18 +659,38 @@
     const closeLoginBtn = document.getElementById("closeLoginBtn");
     const loginError = document.getElementById("loginError");
 
+    // Lightbox
+    const lightbox = document.getElementById("lightbox");
+    const lightboxImg = document.getElementById("lightboxImg");
+    const lightboxClose = document.getElementById("lightboxClose");
+
+    // Dark Mode Toggle
+    themeToggleBtn.onclick = () => {
+      document.body.classList.toggle("dark-mode");
+      themeToggleBtn.innerText = document.body.classList.contains("dark-mode") ? "☀️" : "🌙";
+    };
+
+    // Lightbox Steuerung
+    lightboxClose.onclick = () => { lightbox.style.display = "none"; };
+    lightbox.onclick = (e) => { if (e.target === lightbox) lightbox.style.display = "none"; };
+
+    function openLightbox(src) {
+      lightboxImg.src = src;
+      lightbox.style.display = "flex";
+    }
+
     // Auth Überwachung
     onAuthStateChanged(auth, (user) => {
       currentUser = user;
       logoutBtn.style.display = user ? "inline-block" : "none";
       updateNfcBoxVisibility();
+      renderGuestbook();
     });
 
     function updateNfcBoxVisibility() {
       if (currentUser && activeTrip) {
         nfcAdminBox.style.display = "block";
-        const currentUrl = window.location.origin + window.location.pathname + `?trip=${activeTrip.id}`;
-        nfcUrlDisplay.innerText = currentUrl;
+        nfcUrlDisplay.innerText = `${window.location.origin}${window.location.pathname}?trip=${activeTrip.id}`;
       } else {
         nfcAdminBox.style.display = "none";
       }
@@ -513,17 +737,15 @@
       alert("🔒 Abgemeldet. Lesemodus aktiv.");
     };
 
-    // NFC Link kopieren
     copyNfcBtn.onclick = () => {
-      const url = nfcUrlDisplay.innerText;
-      navigator.clipboard.writeText(url).then(() => {
+      navigator.clipboard.writeText(nfcUrlDisplay.innerText).then(() => {
         copyNfcBtn.innerText = "✓ Kopiert!";
         setTimeout(() => { copyNfcBtn.innerText = "📋 Kopieren"; }, 2000);
       });
     };
 
     // ==========================================
-    // 1. HAUPTÜBERSICHT
+    // 1. HAUPTÜBERSICHT & WELTKARTE
     // ==========================================
     async function loadTrips() {
       const q = query(collection(db, "reisen"), orderBy("startDate", "desc"));
@@ -591,9 +813,7 @@
       });
     };
 
-    closeTripModalBtn.onclick = () => {
-      tripModal.style.display = "none";
-    };
+    closeTripModalBtn.onclick = () => { tripModal.style.display = "none"; };
 
     saveTripBtn.onclick = async () => {
       if (!newTripTitle.value.trim()) {
@@ -607,6 +827,7 @@
         startDate: newTripStart.value || "",
         endDate: newTripEnd.value || "",
         bestOfPhotos: [],
+        guestbook: [],
         days: []
       };
 
@@ -617,6 +838,55 @@
       const createdTrip = { id: tripId, ...newTripData };
       openTrip(createdTrip, true);
     };
+
+    // Weltkarte Modal
+    worldMapBtn.onclick = () => {
+      worldMapModal.style.display = "flex";
+      setTimeout(initWorldMap, 200);
+    };
+
+    closeWorldMapBtn.onclick = () => {
+      worldMapModal.style.display = "none";
+    };
+
+    function initWorldMap() {
+      if (!worldMapInstance) {
+        worldMapInstance = L.map('worldMap').setView([20, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap'
+        }).addTo(worldMapInstance);
+      } else {
+        worldMapInstance.invalidateSize();
+      }
+
+      // Alle alten Marker entfernen
+      worldMapInstance.eachLayer((layer) => {
+        if (layer instanceof L.Marker) {
+          worldMapInstance.removeLayer(layer);
+        }
+      });
+
+      const bounds = [];
+      tripsList.forEach(trip => {
+        (trip.days || []).forEach(day => {
+          (day.locations || []).forEach(loc => {
+            if (loc.isRoute && loc.coords) {
+              const parts = loc.coords.split(",").map(n => parseFloat(n.trim()));
+              if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+                const marker = L.marker([parts[0], parts[1]]).addTo(worldMapInstance);
+                marker.bindPopup(`<strong>${trip.title}</strong><br>${loc.name || ''}`);
+                bounds.push([parts[0], parts[1]]);
+              }
+            }
+          });
+        });
+      });
+
+      if (bounds.length > 0) {
+        worldMapInstance.fitBounds(bounds, { padding: [40, 40] });
+      }
+    }
 
     // ==========================================
     // 2. REISE-DETAILANSICHT
@@ -640,14 +910,13 @@
 
       updateNfcBoxVisibility();
       renderTabs();
+      renderGuestbook();
       selectTab(trip.days && trip.days.length > 0 ? 1 : 0);
     }
 
-    // Zurück zur Übersicht -> Passwortgeschützt!
     backToTripsBtn.onclick = () => {
       requireAuth(() => {
         activeTrip = null;
-        // URL-Parameter entfernen
         window.history.pushState({}, '', window.location.pathname);
         tripDetailView.style.display = "none";
         tripsView.style.display = "block";
@@ -661,11 +930,18 @@
       // 1. Tab: Best Of
       const bestOfBtn = document.createElement("button");
       bestOfBtn.className = `tab-btn highlight-tab ${activeTabIndex === 0 ? "active" : ""}`;
-      bestOfBtn.innerText = "🌟 Best of (Highlights)";
+      bestOfBtn.innerText = "🌟 Best of";
       bestOfBtn.onclick = () => selectTab(0);
       dayTabs.appendChild(bestOfBtn);
 
-      // 2. Tabs für Tage
+      // 2. Tab: Reisekarte
+      const mapBtn = document.createElement("button");
+      mapBtn.className = `tab-btn map-tab ${activeTabIndex === -1 ? "active" : ""}`;
+      mapBtn.innerText = "🗺️ Route & Karte";
+      mapBtn.onclick = () => selectTab(-1);
+      dayTabs.appendChild(mapBtn);
+
+      // 3. Tabs: Tage
       (activeTrip.days || []).forEach((day, idx) => {
         const tabIndex = idx + 1;
         const btn = document.createElement("button");
@@ -681,22 +957,46 @@
       renderTabs();
 
       contentEditor.style.display = "none";
-      contentViewer.style.display = "block";
 
-      if (index === 0) {
-        viewTitle.innerText = `🌟 Best of – ${activeTrip.title}`;
-        viewDate.innerText = "Die schönsten Momente & Highlights der gesamten Reise";
-        viewText.style.display = "none";
-        deleteDayBtn.style.display = "none";
-        renderGallery(activeTrip.bestOfPhotos || [], viewGallery);
+      if (index === -1) {
+        // Reisekarte Ansicht
+        contentViewer.style.display = "none";
+        mapViewer.style.display = "block";
+        setTimeout(initTripMap, 200);
       } else {
-        const day = activeTrip.days[index - 1];
-        viewTitle.innerText = day.title || `Tag ${day.dayNumber}`;
-        viewDate.innerText = day.date ? `📅 ${day.date.split("-").reverse().join(".")}` : "";
-        viewText.style.display = "block";
-        viewText.innerText = day.text || "Noch kein Text für diesen Tag verfasst.";
-        deleteDayBtn.style.display = "inline-block";
-        renderGallery(day.photos || [], viewGallery);
+        mapViewer.style.display = "none";
+        contentViewer.style.display = "block";
+
+        if (index === 0) {
+          // Best-Of
+          viewTitle.innerText = `🌟 Best of – ${activeTrip.title}`;
+          viewDate.innerText = "Die schönsten Momente & Highlights der gesamten Reise";
+          viewTrackerBadges.innerHTML = "";
+          viewText.style.display = "none";
+          deleteDayBtn.style.display = "none";
+          renderGallery(activeTrip.bestOfPhotos || [], viewGallery);
+        } else {
+          // Normaler Tag
+          const day = activeTrip.days[index - 1];
+          viewTitle.innerText = day.title || `Tag ${day.dayNumber}`;
+          viewDate.innerText = day.date ? `📅 ${day.date.split("-").reverse().join(".")}` : "";
+          
+          // Tracker Badges
+          viewTrackerBadges.innerHTML = "";
+          const tracker = day.tracker || {};
+          const badges = [tracker.weather, tracker.temp, tracker.transport, tracker.focus, tracker.mood, tracker.sleep].filter(Boolean);
+          badges.forEach(b => {
+            const span = document.createElement("span");
+            span.className = "tracker-badge";
+            span.innerText = b;
+            viewTrackerBadges.appendChild(span);
+          });
+
+          viewText.style.display = "block";
+          viewText.innerText = day.text || "Noch kein Text für diesen Tag verfasst.";
+          deleteDayBtn.style.display = "inline-block";
+          renderGallery(day.photos || [], viewGallery);
+        }
       }
     }
 
@@ -712,11 +1012,73 @@
         if (cleanPath) {
           const img = document.createElement("img");
           img.src = cleanPath;
-          img.alt = "Foto";
+          img.alt = "Reisefoto";
+          img.onclick = () => openLightbox(cleanPath);
           img.onerror = () => { img.style.display = "none"; };
           container.appendChild(img);
         }
       });
+    }
+
+    // Spezifische Reisekarte rendern
+    function initTripMap() {
+      if (!tripMapInstance) {
+        tripMapInstance = L.map('tripMap').setView([20, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap'
+        }).addTo(tripMapInstance);
+      } else {
+        tripMapInstance.invalidateSize();
+      }
+
+      // Layer leeren
+      tripMapInstance.eachLayer((layer) => {
+        if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+          tripMapInstance.removeLayer(layer);
+        }
+      });
+
+      const allLocs = [];
+      const routeLocs = [];
+
+      (activeTrip.days || []).forEach(day => {
+        (day.locations || []).forEach(loc => {
+          if (loc.coords) {
+            const parts = loc.coords.split(",").map(n => parseFloat(n.trim()));
+            if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+              const item = {
+                lat: parts[0],
+                lng: parts[1],
+                name: loc.name || 'Ort',
+                datetime: loc.datetime || '',
+                isRoute: !!loc.isRoute
+              };
+              allLocs.push(item);
+              if (item.isRoute) routeLocs.push(item);
+            }
+          }
+        });
+      });
+
+      // Alle Marker setzen
+      const bounds = [];
+      allLocs.forEach(loc => {
+        const marker = L.marker([loc.lat, loc.lng]).addTo(tripMapInstance);
+        marker.bindPopup(`<strong>${loc.name}</strong><br>${loc.datetime ? '🕒 ' + loc.datetime : ''}`);
+        bounds.push([loc.lat, loc.lng]);
+      });
+
+      // Route chronologisch nach Datum/Uhrzeit sortieren und verbinden
+      if (routeLocs.length > 1) {
+        routeLocs.sort((a, b) => (a.datetime || "").localeCompare(b.datetime || ""));
+        const lineCoords = routeLocs.map(l => [l.lat, l.lng]);
+        L.polyline(lineCoords, { color: '#2563eb', weight: 4, opacity: 0.8, dashArray: '6, 6' }).addTo(tripMapInstance);
+      }
+
+      if (bounds.length > 0) {
+        tripMapInstance.fitBounds(bounds, { padding: [40, 40] });
+      }
     }
 
     // Tag hinzufügen
@@ -730,8 +1092,10 @@
           dayNumber: nextDayNum,
           title: `Tag ${nextDayNum}`,
           date: today,
+          tracker: {},
           text: "",
-          photos: []
+          photos: [],
+          locations: []
         };
 
         activeTrip.days.push(newDay);
@@ -742,10 +1106,9 @@
       });
     };
 
-    // Tag löschen
     deleteDayBtn.onclick = () => {
       requireAuth(async () => {
-        if (activeTabIndex === 0) return;
+        if (activeTabIndex <= 0) return;
         const dayIndex = activeTabIndex - 1;
         const day = activeTrip.days[dayIndex];
 
@@ -759,31 +1122,91 @@
       });
     };
 
+    // Editierbereich vorbereiten
     function openEditMode() {
       contentViewer.style.display = "none";
+      mapViewer.style.display = "none";
       contentEditor.style.display = "block";
 
       if (activeTabIndex === 0) {
+        // Best-Of bearbeiten
         editTitle.value = "Best of (Highlights)";
         editTitle.disabled = true;
         editDateGroup.style.display = "none";
+        editTrackerGroup.style.display = "none";
         editTextGroup.style.display = "none";
+        editLocationsGroup.style.display = "none";
         editPhotos.value = (activeTrip.bestOfPhotos || []).join(", ");
       } else {
+        // Tag bearbeiten
         const day = activeTrip.days[activeTabIndex - 1];
         editTitle.value = day.title || "";
         editTitle.disabled = false;
         editDateGroup.style.display = "block";
         editDate.value = day.date || "";
+        
+        editTrackerGroup.style.display = "block";
+        const t = day.tracker || {};
+        editWeather.value = t.weather || "";
+        editTemp.value = t.temp || "";
+        editTransport.value = t.transport || "";
+        editFocus.value = t.focus || "";
+        editMood.value = t.mood || "";
+        editSleep.value = t.sleep || "";
+
         editTextGroup.style.display = "block";
         editText.value = day.text || "";
         editPhotos.value = (day.photos || []).join(", ");
+
+        editLocationsGroup.style.display = "block";
+        renderLocationInputs(day.locations || []);
       }
     }
 
-    editContentBtn.onclick = () => {
-      requireAuth(openEditMode);
+    function renderLocationInputs(locations) {
+      locationsList.innerHTML = "";
+      locations.forEach((loc, idx) => {
+        const div = document.createElement("div");
+        div.className = "loc-item";
+        div.innerHTML = `
+          <div class="form-row" style="margin-bottom: 8px;">
+            <input type="text" placeholder="Name des Ortes (z.B. Strand)" class="loc-name" value="${loc.name || ''}">
+            <input type="text" placeholder="Koordinaten (z.B. 41.9028, 12.4964)" class="loc-coords" value="${loc.coords || ''}">
+          </div>
+          <div class="form-row" style="align-items: center;">
+            <input type="datetime-local" class="loc-datetime" value="${loc.datetime || ''}">
+            <label style="display: flex; align-items: center; gap: 6px; font-weight: normal; margin: 0; cursor: pointer;">
+              <input type="checkbox" class="loc-is-route" ${loc.isRoute ? 'checked' : ''} style="width: auto;"> In Hauptroute aufnehmen
+            </label>
+            <button type="button" class="danger remove-loc-btn" style="padding: 4px 10px; font-size: 0.8rem; width: fit-content; justify-self: end;">Löschen</button>
+          </div>
+        `;
+        div.querySelector(".remove-loc-btn").onclick = () => div.remove();
+        locationsList.appendChild(div);
+      });
+    }
+
+    addLocBtn.onclick = () => {
+      const div = document.createElement("div");
+      div.className = "loc-item";
+      div.innerHTML = `
+        <div class="form-row" style="margin-bottom: 8px;">
+          <input type="text" placeholder="Name des Ortes (z.B. Aussichtspunkt)" class="loc-name">
+          <input type="text" placeholder="Koordinaten (z.B. 41.9028, 12.4964)" class="loc-coords">
+        </div>
+        <div class="form-row" style="align-items: center;">
+          <input type="datetime-local" class="loc-datetime">
+          <label style="display: flex; align-items: center; gap: 6px; font-weight: normal; margin: 0; cursor: pointer;">
+            <input type="checkbox" class="loc-is-route" checked style="width: auto;"> In Hauptroute aufnehmen
+          </label>
+          <button type="button" class="danger remove-loc-btn" style="padding: 4px 10px; font-size: 0.8rem; width: fit-content; justify-self: end;">Löschen</button>
+        </div>
+      `;
+      div.querySelector(".remove-loc-btn").onclick = () => div.remove();
+      locationsList.appendChild(div);
     };
+
+    editContentBtn.onclick = () => requireAuth(openEditMode);
 
     cancelEditBtn.onclick = () => {
       contentEditor.style.display = "none";
@@ -801,12 +1224,35 @@
         activeTrip.bestOfPhotos = photosArray;
       } else {
         const dayIndex = activeTabIndex - 1;
+        
+        // Locations auslesen
+        const locElements = locationsList.querySelectorAll(".loc-item");
+        const locations = [];
+        locElements.forEach(el => {
+          const name = el.querySelector(".loc-name").value.trim();
+          const coords = el.querySelector(".loc-coords").value.trim();
+          const datetime = el.querySelector(".loc-datetime").value;
+          const isRoute = el.querySelector(".loc-is-route").checked;
+          if (name || coords) {
+            locations.push({ name, coords, datetime, isRoute });
+          }
+        });
+
         activeTrip.days[dayIndex] = {
           dayNumber: activeTrip.days[dayIndex].dayNumber,
           title: editTitle.value,
           date: editDate.value,
+          tracker: {
+            weather: editWeather.value,
+            temp: editTemp.value,
+            transport: editTransport.value,
+            focus: editFocus.value,
+            mood: editMood.value,
+            sleep: editSleep.value
+          },
           text: editText.value,
-          photos: photosArray
+          photos: photosArray,
+          locations: locations
         };
       }
 
@@ -823,14 +1269,97 @@
     };
 
     // ==========================================
-    // INITIALISIERUNG & URL-PARAMETER PRÜFUNG
+    // 3. GÄSTEBUCH
+    // ==========================================
+    function renderGuestbook() {
+      if (!activeTrip) return;
+      guestbookEntries.innerHTML = "";
+      const list = activeTrip.guestbook || [];
+
+      if (list.length === 0) {
+        guestbookEntries.innerHTML = `<div class="empty-state">Noch keine Einträge. Sei der Erste!</div>`;
+        return;
+      }
+
+      list.forEach((entry, idx) => {
+        const div = document.createElement("div");
+        div.className = "guestbook-entry";
+        
+        div.innerHTML = `
+          <div class="guestbook-header">
+            <span class="guestbook-author">👤 ${entry.author}</span>
+            <span>🕒 ${entry.date}</span>
+          </div>
+          <div>${entry.message}</div>
+          ${currentUser ? `
+            <div style="margin-top: 8px; display: flex; gap: 8px;">
+              <button class="secondary edit-gb-btn" style="padding: 3px 8px; font-size: 0.75rem;">✏️ Bearbeiten</button>
+              <button class="danger delete-gb-btn" style="padding: 3px 8px; font-size: 0.75rem;">🗑️ Löschen</button>
+            </div>
+          ` : ''}
+        `;
+
+        if (currentUser) {
+          div.querySelector(".delete-gb-btn").onclick = async () => {
+            if (confirm("Diesen Gästebucheintrag wirklich löschen?")) {
+              activeTrip.guestbook.splice(idx, 1);
+              await setDoc(doc(db, "reisen", activeTrip.id), activeTrip);
+              renderGuestbook();
+            }
+          };
+
+          div.querySelector(".edit-gb-btn").onclick = async () => {
+            const newMsg = prompt("Nachricht anpassen:", entry.message);
+            if (newMsg !== null && newMsg.trim()) {
+              activeTrip.guestbook[idx].message = newMsg.trim();
+              await setDoc(doc(db, "reisen", activeTrip.id), activeTrip);
+              renderGuestbook();
+            }
+          };
+        }
+
+        guestbookEntries.appendChild(div);
+      });
+    }
+
+    sendGuestbookBtn.onclick = async () => {
+      const msg = guestbookMsg.value.trim();
+      if (!msg) {
+        alert("Bitte schreibe zuerst eine Nachricht.");
+        return;
+      }
+
+      let author = prompt("Unter welchem Namen möchtest du die Nachricht hinterlassen? (Leer lassen für 'Anonym'):");
+      if (author === null) return;
+      author = author.trim() || "Anonym";
+
+      const now = new Date();
+      const dateStr = now.toLocaleDateString("de-DE") + " " + now.toLocaleTimeString("de-DE", { hour: '2-digit', minute: '2-digit' });
+
+      if (!activeTrip.guestbook) activeTrip.guestbook = [];
+      activeTrip.guestbook.unshift({
+        author: author,
+        message: msg,
+        date: dateStr
+      });
+
+      try {
+        await setDoc(doc(db, "reisen", activeTrip.id), activeTrip);
+        guestbookMsg.value = "";
+        renderGuestbook();
+      } catch (e) {
+        alert("Fehler beim Senden: " + e.message);
+      }
+    };
+
+    // ==========================================
+    // INITIALISIERUNG
     // ==========================================
     async function initApp() {
       const urlParams = new URLSearchParams(window.location.search);
       const tripIdFromUrl = urlParams.get("trip");
 
       if (tripIdFromUrl) {
-        // Direkt eine bestimmte Reise über den NFC-Link öffnen
         try {
           const docSnap = await getDoc(doc(db, "reisen", tripIdFromUrl));
           if (docSnap.exists()) {
@@ -842,7 +1371,6 @@
         }
       }
 
-      // Standardfall: Hauptübersicht laden
       loadTrips();
     }
 
@@ -855,6 +1383,7 @@
     <header>
       <h1>🌍 Reisetagebuch</h1>
       <div class="header-actions">
+        <button id="themeToggleBtn" class="theme-toggle-btn" title="Dark Mode umschalten">🌙</button>
         <button id="logoutBtn" class="secondary" style="display: none;">🔒 Abmelden</button>
       </div>
     </header>
@@ -863,14 +1392,17 @@
          ANSICHT 1: HAUPTMENÜ (REISEN-ÜBERSICHT)
          ========================================== -->
     <div id="tripsView">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
         <h2>Meine Reisen</h2>
-        <button id="addTripBtn">➕ Neue Reise hinzufügen</button>
+        <div style="display: flex; gap: 8px;">
+          <button id="worldMapBtn" class="secondary">🗺️ Weltkarte</button>
+          <button id="addTripBtn">➕ Neue Reise</button>
+        </div>
       </div>
 
       <div id="emptyTripsState" class="empty-state">
         <p>Noch keine Reisen angelegt.</p>
-        <p>Klicke auf <strong>„➕ Neue Reise hinzufügen“</strong>, um deine erste Reise einzutragen!</p>
+        <p>Klicke auf <strong>„➕ Neue Reise“</strong>, um deine erste Reise einzutragen!</p>
       </div>
 
       <div class="trips-grid" id="tripsGrid"></div>
@@ -897,13 +1429,14 @@
       <h2 id="tripHeading" style="margin-top: 8px;"></h2>
       <div id="tripSubheading" style="color: var(--muted); margin-bottom: 20px;"></div>
 
-      <!-- Tages & Best-Of Tabs -->
+      <!-- Tages & Karten Tabs -->
       <div class="day-tabs" id="dayTabs"></div>
 
-      <!-- 2.1 LESEMODUS -->
+      <!-- 2.1 LESEMODUS (TEXT & BILDER) -->
       <div id="contentViewer" class="view-card">
         <h3 id="viewTitle" class="view-title"></h3>
         <div id="viewDate" class="view-date"></div>
+        <div id="viewTrackerBadges" class="tracker-badges"></div>
         <div id="viewText" class="view-text"></div>
         
         <div style="display: flex; gap: 8px; margin-bottom: 20px;">
@@ -917,7 +1450,14 @@
         </div>
       </div>
 
-      <!-- 2.2 BEARBEITUNGSMODUS -->
+      <!-- 2.2 REISEKARTE & ROUTE -->
+      <div id="mapViewer" style="display: none;">
+        <h3 class="view-title">🗺️ Route & besuchte Orte</h3>
+        <p style="font-size: 0.9rem; color: var(--muted); margin-bottom: 12px;">Hier siehst du die chronologische Reiseroute und alle markierten Orte dieser Reise.</p>
+        <div id="tripMap" class="map-container"></div>
+      </div>
+
+      <!-- 2.3 BEARBEITUNGSMODUS -->
       <div id="contentEditor" style="display: none;">
         <div class="form-group">
           <label for="editTitle">Titel / Überschrift</label>
@@ -927,6 +1467,91 @@
         <div class="form-group" id="editDateGroup">
           <label for="editDate">Datum</label>
           <input type="date" id="editDate">
+        </div>
+
+        <!-- Tracker Dropdowns -->
+        <div id="editTrackerGroup" style="background: var(--badge-bg); padding: 14px; border-radius: 10px; margin-bottom: 16px; border: 1px solid var(--border);">
+          <strong style="display: block; margin-bottom: 10px; font-size: 0.95rem;">🌤️ Tages-Tracker & Infos</strong>
+          <div class="form-row-3" style="margin-bottom: 10px;">
+            <div>
+              <label style="font-size: 0.8rem;">Wetter</label>
+              <select id="editWeather">
+                <option value="">-- Keine Angabe --</option>
+                <option value="☀️ Sonnig">☀️ Sonnig</option>
+                <option value="⛅ Leicht bewölkt">⛅ Leicht bewölkt</option>
+                <option value="☁️ Bewölkt">☁️ Bewölkt</option>
+                <option value="🌧️ Regen">🌧️ Regen</option>
+                <option value="⛈️ Gewitter">⛈️ Gewitter</option>
+                <option value="❄️ Schnee">❄️ Schnee</option>
+                <option value="💨 Windig">💨 Windig</option>
+                <option value="🌫️ Neblig">🌫️ Neblig</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size: 0.8rem;">Temperatur</label>
+              <select id="editTemp">
+                <option value="">-- Keine Angabe --</option>
+                <option value="🥵 Sehr heiß">🥵 Sehr heiß</option>
+                <option value="😎 Angenehm warm">😎 Angenehm warm</option>
+                <option value="🧣 Frisch">🧣 Frisch</option>
+                <option value="🥶 Eiskalt">🥶 Eiskalt</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size: 0.8rem;">Transport</label>
+              <select id="editTransport">
+                <option value="">-- Keine Angabe --</option>
+                <option value="🥾 Zu Fuß">🥾 Zu Fuß</option>
+                <option value="🚗 Auto / Roadtrip">🚗 Auto / Roadtrip</option>
+                <option value="🚐 Camper">🚐 Camper</option>
+                <option value="🚆 Zug / Bahn">🚆 Zug / Bahn</option>
+                <option value="🚌 Bus">🚌 Bus</option>
+                <option value="✈️ Flugzeug">✈️ Flugzeug</option>
+                <option value="🚲 Fahrrad">🚲 Fahrrad</option>
+                <option value="🛵 Roller">🛵 Roller</option>
+                <option value="🚢 Schiff / Boot">🚢 Schiff / Boot</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row-3">
+            <div>
+              <label style="font-size: 0.8rem;">Fokus</label>
+              <select id="editFocus">
+                <option value="">-- Keine Angabe --</option>
+                <option value="🏖️ Strand / Relaxen">🏖️ Strand / Relaxen</option>
+                <option value="🏛️ Sightseeing & Kultur">🏛️ Sightseeing & Kultur</option>
+                <option value="⛰️ Natur & Wandern">⛰️ Natur & Wandern</option>
+                <option value="🎢 Action & Abenteuer">🎢 Action & Abenteuer</option>
+                <option value="🛍️ Shopping & Bummeln">🛍️ Shopping & Bummeln</option>
+                <option value="🍽️ Kulinarik & Food">🍽️ Kulinarik & Food</option>
+                <option value="🧳 Reisetag / Transit">🧳 Reisetag / Transit</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size: 0.8rem;">Stimmung</label>
+              <select id="editMood">
+                <option value="">-- Keine Angabe --</option>
+                <option value="🤩 Highlight (10/10)">🤩 Highlight (10/10)</option>
+                <option value="😊 Sehr schöner Tag">😊 Sehr schöner Tag</option>
+                <option value="😌 Entspannt">😌 Entspannt</option>
+                <option value="🥱 Anstrengend">🥱 Anstrengend</option>
+                <option value="🤒 Nicht fit">🤒 Nicht fit</option>
+                <option value="🌧️ Pechtag">🌧️ Pechtag</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size: 0.8rem;">Übernachtung</label>
+              <select id="editSleep">
+                <option value="">-- Keine Angabe --</option>
+                <option value="🏨 Hotel">🏨 Hotel</option>
+                <option value="🏠 Airbnb / Fewo">🏠 Airbnb / Fewo</option>
+                <option value="⛺ Zelt">⛺ Zelt</option>
+                <option value="🚐 Camper / Van">🚐 Camper / Van</option>
+                <option value="🛏️ Hostel / Hütte">🛏️ Hostel / Hütte</option>
+                <option value="🛋️ Freunde / Familie">🛋️ Freunde / Familie</option>
+              </select>
+            </div>
+          </div>
         </div>
 
         <div class="form-group" id="editTextGroup">
@@ -939,12 +1564,44 @@
           <input type="text" id="editPhotos" placeholder="./bilder/tag1_1.jpg, ./bilder/tag1_2.jpg">
         </div>
 
+        <!-- Orte / Locations für Karte -->
+        <div id="editLocationsGroup" class="form-group">
+          <label>📍 Orte & Standorte für die Karte</label>
+          <div id="locationsList"></div>
+          <button type="button" id="addLocBtn" class="secondary" style="padding: 6px 12px; font-size: 0.85rem; margin-top: 6px;">➕ Ort hinzufügen</button>
+        </div>
+
         <div class="edit-actions">
           <button id="saveBtn">💾 Änderungen speichern</button>
           <button id="cancelEditBtn" class="secondary">Abbrechen</button>
           <span id="saveStatus" class="status-msg">✓ Erfolgreich gespeichert!</span>
         </div>
       </div>
+
+      <!-- 2.4 GÄSTEBUCH -->
+      <div class="guestbook-section" id="guestbookSection">
+        <h3>✍️ Gästebuch für diese Reise</h3>
+        <p style="font-size: 0.9rem; color: var(--muted); margin-bottom: 12px;">Hinterlasse einen lieben Gruß oder eine Nachricht!</p>
+        
+        <div class="form-group">
+          <textarea id="guestbookMsg" style="min-height: 80px;" placeholder="Deine Nachricht..."></textarea>
+        </div>
+        <button id="sendGuestbookBtn">💬 Nachricht abschicken</button>
+
+        <div class="guestbook-list" id="guestbookEntries"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: WELTKARTE -->
+  <div id="worldMapModal" class="modal-overlay">
+    <div class="modal" style="max-width: 750px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3>🗺️ Weltkarte – Alle Reisen</h3>
+        <button id="closeWorldMapBtn" class="secondary" style="padding: 4px 10px;">✕</button>
+      </div>
+      <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 12px;">Pins zeigen die Haupt-Stationen deiner Reisen mit dem jeweiligen Reisenamen.</p>
+      <div id="worldMap" class="map-container"></div>
     </div>
   </div>
 
@@ -991,6 +1648,12 @@
         <button id="closeLoginBtn" class="secondary">Abbrechen</button>
       </div>
     </div>
+  </div>
+
+  <!-- LIGHTBOX / VOLLBILD BILDER -->
+  <div id="lightbox" class="lightbox">
+    <span id="lightboxClose" class="lightbox-close">&times;</span>
+    <img id="lightboxImg" class="lightbox-img" src="" alt="Vollbild Vorschau">
   </div>
 
 </body>
